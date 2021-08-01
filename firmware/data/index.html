@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Callisto Preferences</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
+</head>
+
+<body>
+  <div class="section">
+    <div class="container">
+      <h1 class="title">Callisto Preferences</h1>
+      <form class="box" action="/get" method="POST">
+        <div class="content">
+          <h2>Network</h2>
+          <div class="column is-one-third">
+            <div class="field">
+              <label class="label" for="ssid">WiFi SSID:</label>
+              <div class="control">
+                <input class="input" type="text" id="ssid" name="ssid" value="%ssid%">
+              </div>
+            </div>
+            <div class="field"><label class="label" for="pwd">WiFi Password: </label>
+              <div class="control">
+                <input class="input" type="password" id="pwd" name="password" value="%password%">
+              </div>
+            </div>
+          </div>
+
+          <hr>
+
+          <h2>Time Display</h2>
+          <div class="field">
+            <label class="label" for="t_format">Hour format:</label>
+            <div class="control">
+              <div class="select"><select name="t_format" id="t_format">
+                  <option %t_format_select_0% value="0">12 hour (PM dot)</option>
+                  <option %t_format_select_1% value="1">12 hour (No PM dot)</option>
+                  <option %t_format_select_2% value="2">24 hour</option>
+                </select></div>
+            </div>
+          </div>
+          <div class="field">
+            <label class="label" for="t_pad">Padding:</label>
+            <div class="control">
+              <div class="select"><select name="t_pad" id="t_pad">
+                  <option value="0">Zero pad (e.g. 01:00:00)</option>
+                  <option value="1">No pad (e.g. 1:00:00)</option>
+                </select></div>
+            </div>
+          </div>
+          <div class="field">
+            <label class="label" for="t_divider">Dividers:</label>
+            <div class="control">
+              <div class="select"><select name="t_divider" id="t_divider">
+                  <option value="0">Space (e.g. 01 00 00)</option>
+                  <option value="1">Hyphen (e.g. 01-00-00)</option>
+                </select></div>
+            </div>
+          </div>
+          <hr>
+
+          <h2>Date Display</h2>
+          <div class="field">
+            <label class="label" for="d_format">Display format:</label>
+            <div class="control">
+              <div class="select"><select name="d_format" id="d_format">
+                  <option value="0">MM-DD-YY</option>
+                  <option value="1">DD-MM-YY</option>
+                </select></div>
+            </div>
+          </div>
+          <div class="field">
+            <label class="label" for="d_pad">Padding:</label>
+            <div class="control">
+              <div class="select"><select name="d_pad" id="d_pad">
+                  <option value="0">Space pad (e.g. 1. 1.2021)</option>
+                  <option value="1">Zero pad (e.g. 01.01.2021)</option>
+                  <option value="2">No pad(e.g. 1.1.2021)</option>
+                </select></div>
+            </div>
+          </div>
+          <div class="field">
+            <label class="label" for="d_divider">Dividers:</label>
+            <div class="control">
+              <div class="select"><select name="d_divider" id="d_divider">
+                  <option value="0">Dot, full year (e.g. 12.24.2021)</option>
+                  <option value="1">Hyphen (e.g. 12-24-21)</option>
+                  <option value="2">Space (e.g. 12 24 21)</option>
+                </select></div>
+            </div>
+          </div>
+          <hr>
+
+          <h2>Brightness</h2>
+          <p>Brightness will be adjusted automatically between max and min brightness values based on ambient
+            light.
+          </p>
+          <div class="columns">
+            <div class="column is-narrow">
+              <div class="field">
+                <label class="label" for="light_brightness">Max brightness (6-10): </label>
+                <div class="control">
+                  <input class="input" type="number" id="light_brightness" name="light_brightness" min="6" max="10"
+                    value="9">
+                </div>
+              </div>
+            </div>
+            <div class="column is-narrow">
+              <div class="field">
+                <label class="label" for="dark_brightness">Min brightness (1-5): </label>
+                <div class="control">
+                  <input class="input" type="number" id="dark_brightness" name="dark_brightness" min="1" max="5"
+                    value="2">
+                </div>
+              </div>
+            </div>
+          </div>
+          <hr>
+
+          <h2>Night mode</h2>
+          <p>Clock will automatically shut off during these hours</p>
+          <div class="columns">
+            <div class="column is-narrow">
+              <div class="field">
+                <label class="label" for="night_start">Night mode from:</label>
+                <div class="control">
+                  <input class="input" type="time" id="night_start" name="night_start" value="00:00">
+                </div>
+              </div>
+            </div>
+            <div class="column is-narrow">
+              <div class="field">
+                <label class="label" for="night_end">Night mode to:</label>
+                <div class="control">
+                  <input class="input" type="time" id="night_end" name="night_end" value="06:00">
+                </div>
+              </div>
+            </div>
+          </div>
+          <hr>
+
+          <h2>Time zone</h2>
+          <!-- #TODO: get posix tz string from csv? -->
+          <div class="column is-one-third">
+            <div class="field">
+              <label class="label" for="tz">Time zone (UTC offset):</label>
+              <div class="control">
+                <input class="input" type="number" id="tz" name="tz" value="-5">
+              </div>
+            </div>
+          </div>
+          <hr>
+
+          <h2>Daylight saving time</h2>
+          <label class="checkbox" for="dst">
+            <input type="checkbox" id="dst" name="dst">
+            Automatically adjust for daylight saving
+          </label>
+
+          <h3>Daylight saving time starts at</h3>
+          <div class="columns">
+            <div class="column is-narrow">
+              <div class="field">
+                <label class="label" for="dst_start_m">Month: </label>
+                <div class="control">
+                  <div class="select">
+                    <select name="dst_start_m" id="dst_start_m">
+                      <option value="1">January</option>
+                      <option value="2">February</option>
+                      <option selected value="3">March</option>
+                      <option value="4">April</option>
+                      <option value="5">May</option>
+                      <option value="6">June</option>
+                      <option value="7">July</option>
+                      <option value="8">August</option>
+                      <option value="9">September</option>
+                      <option value="10">October</option>
+                      <option value="11">November</option>
+                      <option value="12">December</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="column is-narrow">
+              <div class="field">
+                <label class="label" for="dst_start_w">Week: </label>
+                <div class="control">
+                  <div class="select">
+                    <select name="dst_start_w" id="dst_start_w">
+                      <option value="1">First</option>
+                      <option selected value="2">Second</option>
+                      <option value="3">Third</option>
+                      <option value="4">Fourth</option>
+                      <option value="5">Last</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="column is-narrow">
+              <div class="field">
+                <label class="label" for="dst_start_d">Day: </label>
+                <div class="control">
+                  <div class="select">
+                    <select name="dst_start_d" id="dst_start_d">
+                      <option selected value="0">Sunday</option>
+                      <option value="1">Monday</option>
+                      <option value="2">Tuesday</option>
+                      <option value="3">Wednesday</option>
+                      <option value="4">Thursday</option>
+                      <option value="5">Friday</option>
+                      <option value="6">Saturday</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <h3>Daylight saving time ends at:</h3>
+          <div class="columns">
+            <div class="column is-narrow">
+              <div class="field">
+                <label class="label" for="dst_end_m">Month: </label>
+                <div class="control">
+                  <div class="select">
+                    <select name="dst_end_m" id="dst_end_m">
+                      <option value="1">January</option>
+                      <option value="2">February</option>
+                      <option value="3">March</option>
+                      <option value="4">April</option>
+                      <option value="5">May</option>
+                      <option value="6">June</option>
+                      <option value="7">July</option>
+                      <option value="8">August</option>
+                      <option value="9">September</option>
+                      <option value="10">October</option>
+                      <option selected value="11">November</option>
+                      <option value="12">December</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="column is-narrow">
+              <div class="field">
+                <label class="label" for="dst_end_w">Week: </label>
+                <div class="control">
+                  <div class="select">
+                    <select name="dst_end_w" id="dst_end_w">
+                      <option selected value="1">First</option>
+                      <option value="2">Second</option>
+                      <option value="3">Third</option>
+                      <option value="4">Fourth</option>
+                      <option value="5">Last</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="column is-narrow">
+              <div class="field">
+                <label class="label" for="dst_end_d">Day: </label>
+                <div class="control">
+                  <div class="select">
+                    <select name="dst_end_d" id="dst_end_d">
+                      <option selected value="0">Sunday</option>
+                      <option value="1">Monday</option>
+                      <option value="2">Tuesday</option>
+                      <option value="3">Wednesday</option>
+                      <option value="4">Thursday</option>
+                      <option value="5">Friday</option>
+                      <option value="6">Saturday</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <hr>
+
+          <div class="field is-grouped">
+            <div class="control">
+              <button class="button is-warning" type="button">Discard changes</button>
+            </div>
+            <div class="control">
+              <button class="button is-primary" type="submit" value="Submit">Save and reboot</button>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="container">
+      <form class="box" action="/factory_reset" method="POST">
+        <div class="content">
+          <h2>Factory reset</h2>
+          <div class="control">
+            <button class="button is-danger" type="button">Factory reset</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+</body>
+
+</html>
