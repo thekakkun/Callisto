@@ -84,6 +84,7 @@ void init_spi() {
 }
 
 void init_preference() {
+  // TODO: Change display based on these
   preferences.begin("config");
 
   ssid = preferences.getString("ssid", ssid);
@@ -242,7 +243,8 @@ void on_get(AsyncWebServerRequest* request) {
 
 void on_factory_reset(AsyncWebServerRequest* request) {
   request->send(200, "text/plain",
-                "All preferences reset.\nCallisto will now reboot.\n\nYou may "
+                "All preferences reset to factory defaults.\nCallisto will now "
+                "reboot.\n\nYou may "
                 "close this page.");
 
   preferences.clear();
@@ -252,9 +254,7 @@ void on_factory_reset(AsyncWebServerRequest* request) {
 
 class CaptiveRequestHandler : public AsyncWebHandler {
  public:
-  CaptiveRequestHandler() {
-    server.on("/get", HTTP_POST, on_get);
-  }
+  CaptiveRequestHandler() { server.on("/get", HTTP_POST, on_get); }
 
   virtual ~CaptiveRequestHandler() {}
 
@@ -394,13 +394,42 @@ void set_disp_text(int disp_mode, char* disp_text, int num) {
   time_t now;
   struct tm timeinfo;
 
-  digitalWrite(VFBLANK, LOW);
-
   switch (disp_mode) {
     case 0:  // Time
+      digitalWrite(VFBLANK, LOW);
+
       now = time(0);
       timeinfo = *localtime(&now);
-      strftime(disp_text, 10, " %H %M %S", &timeinfo);
+
+      if (t_format == 0 || t_format == 1) {
+        if (t_pad == 0) {
+          if (t_divider == 0) {
+            strftime(disp_text, 10, " %l %M %S", &timeinfo);
+          } else {  // t_divider == 1
+            strftime(disp_text, 10, " %l-%M-%S", &timeinfo);
+          }
+        } else {  // t_pad == 1
+          if (t_divider == 0) {
+            strftime(disp_text, 10, " %I %M %S", &timeinfo);
+          } else {  // t_divider == 1
+            strftime(disp_text, 10, " %I-%M-%S", &timeinfo);
+          }
+        }
+      } else {  // t_format == 2
+        if (t_pad == 0) {
+          if (t_divider == 0) {
+            strftime(disp_text, 10, " %k %M %S", &timeinfo);
+          } else {  // t_divider == 1
+            strftime(disp_text, 10, " %k-%M-%S", &timeinfo);
+          }
+        } else {  // t_pad == 1
+          if (t_divider == 0) {
+            strftime(disp_text, 10, " %H %M %S", &timeinfo);
+          } else {  // t_divider == 1
+            strftime(disp_text, 10, " %H-%M-%S", &timeinfo);
+          }
+        }
+      }
       break;
 
     case 1:  // off
@@ -408,13 +437,64 @@ void set_disp_text(int disp_mode, char* disp_text, int num) {
       break;
 
     case 2:  // date
+      digitalWrite(VFBLANK, LOW);
+
       now = time(0);
       timeinfo = *localtime(&now);
-      strftime(disp_text, 10, " %m%d%Y", &timeinfo);
+
+      if (d_format == 0) {
+        if (d_pad == 0) {
+          if (d_divider == 0) {
+            strftime(disp_text, 10, " %m%e%Y", &timeinfo);
+          } else if (d_divider == 1) {
+            strftime(disp_text, 10, " %m-%e-%y", &timeinfo);
+          } else {  // d_divider == 2
+            strftime(disp_text, 10, " %m %e %y", &timeinfo);
+          }
+
+        } else {  // d_pad == 1
+          if (d_divider == 0) {
+            strftime(disp_text, 10, " %m%d%Y", &timeinfo);
+          } else if (d_divider == 1) {
+            strftime(disp_text, 10, " %m-%d-%y", &timeinfo);
+          } else {  // d_divider == 2
+            strftime(disp_text, 10, " %m %d %y", &timeinfo);
+          }
+        }
+      } else {  // d_format == 1
+        if (d_pad == 0) {
+          if (d_divider == 0) {
+            strftime(disp_text, 10, " %e%m%Y", &timeinfo);
+            if (disp_text[3] == '0') {
+              disp_text[3] = ' ';
+            }
+          } else if (d_divider == 1) {
+            strftime(disp_text, 10, " %e-%m-%y", &timeinfo);
+            if (disp_text[4] == '0') {
+              disp_text[4] = ' ';
+            }
+          } else {  // d_divider == 2
+            strftime(disp_text, 10, " %e %m %y", &timeinfo);
+            if (disp_text[4] == '0') {
+              disp_text[4] = ' ';
+            }
+          }
+        } else {
+          if (d_divider == 0) {
+            strftime(disp_text, 10, " %d%m%Y", &timeinfo);
+          } else if (d_divider == 1) {
+            strftime(disp_text, 10, " %d-%m-%y", &timeinfo);
+          } else {  // d_divider == 2
+            strftime(disp_text, 10, " %d %m %y", &timeinfo);
+          }
+        }
+      }
+
       break;
 
     case 3:  // IP
     {
+      digitalWrite(VFBLANK, LOW);
       if (!server_active) {
         init_server();
         server_active = 1;
@@ -424,14 +504,17 @@ void set_disp_text(int disp_mode, char* disp_text, int num) {
     }
 
     case 4:  // NTP syncing
+      digitalWrite(VFBLANK, LOW);
       sprintf(disp_text, " %-8s", "Callisto");
       break;
 
-    case 5:  //
+    case 5:  // Wifi error
+      digitalWrite(VFBLANK, LOW);
       sprintf(disp_text, " %-8s", "net err");
       break;
 
-    case 6:
+    case 6:  // AP active
+      digitalWrite(VFBLANK, LOW);
       sprintf(disp_text, " %-8s", "connect");
       dns_server.processNextRequest();
       break;
