@@ -39,20 +39,20 @@ const char* HOSTNAME = "Callisto";
 const char* AP_SSID = "callisto_config";
 const char* AP_PASSWORD = "12345678";
 
-// Config
+// Config defaults
 Preferences preferences;
-String ssid;
-String password;
+String ssid = "";
+String password = "";
 int t_format = 0;   // [0]: 12 with dot, [1]: 12 without dot, [2]: 24
-int t_pad = 0;      // [0]: No pad, [1]: pad
+int t_pad = 0;      // [0]: no pad, [1]: zero pad
 int t_divider = 0;  // [0]: space, [1]: hyphen
 int d_format = 0;   // [0]: MMDDYYYY, [1]: DDMMYYYY
-int d_pad = 0;      // [0]: No pad, [1]: pad
+int d_pad = 0;      // [0]: No pad, [1]: Zero pad
 int d_divider = 0;  // [0] dot, [1] hyphen, [2] space
-int light_brightness = 10;
-int dark_brightness = 1;
-int night_start, night_end;
-char time_zone[] = "EST+5EDT,M3.2.0/2,M11.1.0/2";
+int lo_darkness = 2;
+int hi_darkness = 9;
+int night_start_h = 0, night_start_m = 0, night_end_h = 6, night_end_m = 0;
+String time_zone = "EST5EDT,M3.2.0,M11.1.0";
 
 void init_brightness() {
   const int PWM_PIN = 16;
@@ -86,9 +86,27 @@ void init_spi() {
 void init_preference() {
   preferences.begin("config");
 
-  ssid = preferences.getString("ssid", "");
-  password = preferences.getString("password", "");
-  // TODO: Get preferences, or write default values
+  ssid = preferences.getString("ssid", ssid);
+  password = preferences.getString("password", password);
+
+  t_format = preferences.getInt("t_format", t_format);
+  t_pad = preferences.getInt("t_pad", t_pad);
+  t_divider = preferences.getInt("t_divider", t_divider);
+
+  d_format = preferences.getInt("d_format", d_format);
+  d_pad = preferences.getInt("d_pad", d_pad);
+  d_divider = preferences.getInt("d_divider", d_divider);
+
+  lo_darkness = preferences.getInt("lo_darkness", lo_darkness);
+  hi_darkness = preferences.getInt("hi_darkness", hi_darkness);
+
+  night_start_h = preferences.getInt("night_start_h", night_start_h);
+  night_start_m = preferences.getInt("night_start_m", night_start_m);
+  night_end_h = preferences.getInt("night_end_h", night_end_h);
+  night_end_m = preferences.getInt("night_end_m", night_end_m);
+
+  time_zone = preferences.getString("time_zone", time_zone);
+
   if (ssid.compareTo("") == 0) {
   } else {
     credentials_saved = 1;
@@ -127,30 +145,94 @@ void init_wifi() {
   }
 }
 
-// String processor(const String& var) {
-//   // TODO: this
-//   // TODO: If in AP mode, only show wifi stuff
-// }
+String processor(const String& var) {
+  if (var == "ssid") {
+    return ssid;
+  } else if (var == "password") {
+    return password;
+  }
+  if (ap_active) {
+    if (var == "ap_hide_begin") {
+      return F("<!-- ");
+    } else if (var == "ap_hide_end") {
+      return F(" -->");
+    }
+  } else {
+    if (var.indexOf("t_format_opt_") >= 0) {
+      if (var == "t_format_opt_" + String(t_format)) {
+        return F("selected");
+      }
+    } else if (var.indexOf("t_pad_opt_") >= 0) {
+      if (var == "t_pad_opt_" + String(t_pad)) {
+        return F("selected");
+      }
+    } else if (var.indexOf("t_divider_opt_") >= 0) {
+      if (var == "t_divider_opt_" + String(t_divider)) {
+        return F("selected");
+      }
+    } else if (var.indexOf("d_format_opt_") >= 0) {
+      if (var == "d_format_opt_" + String(d_format)) {
+        return F("selected");
+      }
+    } else if (var.indexOf("d_pad_opt_") >= 0) {
+      if (var == "d_pad_opt_" + String(d_pad)) {
+        return F("selected");
+      }
+    } else if (var.indexOf("d_divider_opt_") >= 0) {
+      if (var == "d_divider_opt_" + String(d_divider)) {
+        return F("selected");
+      }
+    } else if (var == "lo_darkness") {
+      return String(lo_darkness);
+    } else if (var == "hi_darkness") {
+      return String(hi_darkness);
+    } else if (var.indexOf("night_") >= 0) {
+      char out[2];
+      if (var == "night_start_h") {
+        sprintf(out, "%02d", night_start_h);
+      } else if (var == "night_start_m") {
+        sprintf(out, "%02d", night_start_m);
+      } else if (var == "night_end_h") {
+        sprintf(out, "%02d", night_end_h);
+      } else if (var == "night_end_m") {
+        sprintf(out, "%02d", night_end_m);
+      }
+      return String(out);
+    } else if (var == "time_zone") {
+      return time_zone;
+    }
+  }
+
+  return String();
+}
 
 void on_get(AsyncWebServerRequest* request) {
   int params = request->params();
+
   for (int i = 0; i < params; i++) {
     AsyncWebParameter* p = request->getParam(i);
-    preferences.putString(p->name().c_str(), p->value());
+
+    if (p->name() == "ssid" || p->name() == "password" ||
+        p->name() == "time_zone") {  // Save as Strings
+      preferences.putString(p->name().c_str(), p->value());
+    } else if (p->name() == "night_start") {
+      preferences.putInt("night_start_h", p->value().substring(0, 2).toInt());
+      preferences.putInt("night_end_m", p->value().substring(3, 5).toInt());
+    } else if (p->name() == "night_end") {
+      preferences.putInt("night_end_h", p->value().substring(0, 2).toInt());
+      preferences.putInt("night_end_m", p->value().substring(3, 5).toInt());
+    } else {  // Save as ints
+      preferences.putInt(p->name().c_str(), p->value().toInt());
+    }
   }
-  // TODO: Save to preferences in the correct data type
+
   request->send(200, "text/plain",
                 "Preferences saved.\nCallisto will now reboot.");
   server.end();
   ESP.restart();
 }
 void on_factory_reset(AsyncWebServerRequest* request) {
-  int params = request->params();
-  for (int i = 0; i < params; i++) {
-    AsyncWebParameter* p = request->getParam(i);
-    preferences.putString(p->name().c_str(), p->value());
-  }
-  // TODO: Save to preferences in the correct data type
+  preferences.clear();
   request->send(200, "text/plain",
                 "All preferences cleared.\nCallisto will now reboot.");
   server.end();
@@ -169,7 +251,7 @@ class CaptiveRequestHandler : public AsyncWebHandler {
   bool canHandle(AsyncWebServerRequest* request) { return true; }
 
   void handleRequest(AsyncWebServerRequest* request) {
-    request->send(SPIFFS, "/index.html", String(), false);
+    request->send(SPIFFS, "/index.html", String(), false, processor);
   }
 };
 
@@ -186,17 +268,13 @@ void init_ap() {
 
 void init_server() {
   server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
-    request->send(SPIFFS, "/index.html", String(), false);
+    request->send(SPIFFS, "/index.html", String(), false, processor);
   });
   server.on("/get", HTTP_POST, on_get);
   server.on("/factory_reset", HTTP_POST, on_factory_reset);
 
   server.begin();
 }
-
-// void set_time_zone() {
-//   // TODO: this
-// }
 
 void init_sntp() {
   const char* const ntp_server[] = {
@@ -210,7 +288,7 @@ void init_sntp() {
   }
   sntp_init();
 
-  setenv("TZ", time_zone, 1);
+  setenv("TZ", time_zone.c_str(), 1);
   tzset();
 }
 
@@ -218,7 +296,7 @@ void init_sntp() {
 void adjust_brightness() {
   const int V_IN = 9, MIN_V = 20, MAX_V = 30;
   const int V_RANGE = MAX_V - MIN_V;
-  const float ETA = 0.77;
+  const float ETA = 0.8;
 
   int brightness = analogRead(LDR_PIN);
   float ambient_brightness_p = 1 - float(brightness - min_brightness) /
@@ -282,22 +360,19 @@ int get_mode() {
   } else {
     set_touch_state(touch_state, previous_touch_state, touch_start, touch_end);
 
-    if (!time_synced) {
+    if (touch_state &&
+        now - touch_start > SERVER_START) {  // hold for [server start] ms
+      server_start_time = millis();
+      return 3;  // Config server active
+    } else if (!time_synced) {
       time_t now = time(0);
       struct tm timeinfo = *localtime(&now);
       if (timeinfo.tm_year > 70) {
         time_synced = 1;
       }
       return 4;  // Syncing
-
-    } else if (touch_state && now - touch_start >
-                                  SERVER_START) {  // hold for [server start] ms
-      server_start_time = millis();
-      return 3;  // Config server active
-
     } else if (now - touch_end < SHOW_FOR) {
       return 2;  // show date
-
     } else {
       return 0;  // Show time
     }
