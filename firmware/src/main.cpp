@@ -206,7 +206,17 @@ String processor(const String& var) {
   return String();
 }
 
+void on_cancel(AsyncWebServerRequest* request) {
+  request->send(
+      200, "text/plain",
+      "Preferences closed without saving.\n\nYou may now close this page.");
+}
+
 void on_get(AsyncWebServerRequest* request) {
+  request->send(200, "text/plain",
+                "Preferences saved.\nCallisto will now reboot.\n\nYou may "
+                "close this page.");
+
   int params = request->params();
 
   for (int i = 0; i < params; i++) {
@@ -226,15 +236,16 @@ void on_get(AsyncWebServerRequest* request) {
     }
   }
 
-  request->send(200, "text/plain",
-                "Preferences saved.\nCallisto will now reboot.");
   server.end();
   ESP.restart();
 }
+
 void on_factory_reset(AsyncWebServerRequest* request) {
-  preferences.clear();
   request->send(200, "text/plain",
-                "All preferences cleared.\nCallisto will now reboot.");
+                "All preferences reset.\nCallisto will now reboot.\n\nYou may "
+                "close this page.");
+
+  preferences.clear();
   server.end();
   ESP.restart();
 }
@@ -243,7 +254,6 @@ class CaptiveRequestHandler : public AsyncWebHandler {
  public:
   CaptiveRequestHandler() {
     server.on("/get", HTTP_POST, on_get);
-    server.on("/factory_reset", HTTP_POST, on_factory_reset);
   }
 
   virtual ~CaptiveRequestHandler() {}
@@ -271,7 +281,8 @@ void init_server() {
     request->send(SPIFFS, "/index.html", String(), false, processor);
   });
   server.on("/get", HTTP_POST, on_get);
-  server.on("/factory_reset", HTTP_POST, on_factory_reset);
+  server.on("/factory_reset", HTTP_GET, on_factory_reset);
+  server.on("/cancel", HTTP_GET, on_cancel);
 
   server.begin();
 }
@@ -404,16 +415,11 @@ void set_disp_text(int disp_mode, char* disp_text, int num) {
 
     case 3:  // IP
     {
-      char padded_ip[4];
-
       if (!server_active) {
         init_server();
         server_active = 1;
       }
-
-      sprintf(padded_ip, "%03d", WiFi.localIP()[3]);
-      sprintf(disp_text, "%9s", padded_ip);
-
+      sprintf(disp_text, "%9d", WiFi.localIP()[3]);
       break;
     }
 
