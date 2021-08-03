@@ -272,7 +272,6 @@ void init_ap() {
   server.addHandler(new CaptiveRequestHandler()).setFilter(ON_AP_FILTER);
 
   server.begin();
-  ap_active = 1;
   Serial.print("AP Address: ");
   Serial.println(WiFi.softAPIP());
 }
@@ -347,6 +346,27 @@ void set_touch_state(int& touch_state, int& previous_touch_state,
   }
 }
 
+int set_night() {
+  time_t now = time(0);
+  struct tm timeinfo = *localtime(&now);
+
+  if (night_start_h == timeinfo.tm_hour) {
+    if (night_start_m <= timeinfo.tm_min) {
+      return 1;
+    }
+  } else if (night_start_h <= timeinfo.tm_hour) {
+    return 1;
+  }
+
+  if (night_end_h == timeinfo.tm_hour) {
+    if (night_end_m <= timeinfo.tm_min) {
+      return 0;
+    }
+  } else if (night_end_h <= timeinfo.tm_hour) {
+    return 0;
+  }
+}
+
 // Get mode based on success flags, current time, and touch reading
 int get_mode() {
   const int SHOW_FOR = 5 * 1000;
@@ -359,66 +379,59 @@ int get_mode() {
   static unsigned long touch_start = 0, touch_end = 0;
   static unsigned long server_start_time;
 
-  if (!wifi_connected) {
-    if (!ap_active) {
-      return 5;  // AP active
+  if (ap_active) {
+    if (credentials_saved) {
+      // credentials saved, but timed out -> wifi error
+      return 5;
     } else {
-      // TODO: this isn't being displayed with wifi timeout
-      return 6;  // wifi error
+      // no credentials -> connect to ap
+      return 6;
     }
 
   } else if (server_active) {
     if (now_ms - server_start_time < SERVER_TIMEOUT) {
-      return 3;  // Config server active
+      // server active, not timed out -> show IP
+      return 3;
     } else {
-      server.end();
-      server_active = 0;
-      return 0;  // Config server closed
+      // server timed out -> show time
+      return 0;
     }
 
   } else {
-    time_t now = time(0);
-    struct tm timeinfo = *localtime(&now);
-
-    if (night_start_h == timeinfo.tm_hour) {
-      if (night_start_m <= timeinfo.tm_min) {
-        at_night = 1;
-      }
-    } else if (night_start_h <= timeinfo.tm_hour) {
-      at_night = 1;
-    }
-
-    if (night_end_h == timeinfo.tm_hour) {
-      if (night_end_m <= timeinfo.tm_min) {
-        at_night = 0;
-      }
-    } else if (night_end_h <= timeinfo.tm_hour) {
-      at_night = 0;
-    }
-
     set_touch_state(touch_state, previous_touch_state, touch_start, touch_end);
+    at_night = set_night();
 
-    if (touch_state &&
-        now_ms - touch_start > SERVER_START) {  // hold for [server start] ms
+    if (touch_state && now_ms - touch_start > SERVER_START) {
       server_start_time = millis();
-      return 3;  // Config server active
+      // held for long time -> start server
+      return 3;
+
     } else if (!time_synced) {
+      time_t now = time(0);
+      struct tm timeinfo = *localtime(&now);
+
       if (timeinfo.tm_year > 70) {
         time_synced = 1;
       }
-      return 4;  // Syncing
+      // time syncing -> show boot
+      return 4;
+
     } else if (now_ms - touch_end < SHOW_FOR) {
       if (at_night) {
-        return 0;  // show time
+        // touched at night -> show time
+        return 0;
       } else {
-        return 2;  // show date
+        // touched during day -> show date
+        return 2;
       }
 
     } else {
       if (at_night) {
-        return 1;  // night mode
+        // night -> clock off
+        return 1;
       } else {
-        return 0;  // Show time
+        // day -> show time
+        return 0;
       }
     }
   }
@@ -431,6 +444,10 @@ void set_disp_text(int disp_mode, char* disp_text, int num) {
   switch (disp_mode) {
     case 0:  // Time
       digitalWrite(VFBLANK, LOW);
+      if (server_active) {
+        server.end();
+        server_active = 0;
+      }
 
       now = time(0);
       timeinfo = *localtime(&now);
@@ -485,7 +502,9 @@ void set_disp_text(int disp_mode, char* disp_text, int num) {
           } else {  // d_divider == 2
             strftime(disp_text, 10, " %m %e %y", &timeinfo);
           }
-
+          if (disp_text[1] == '0') {
+            disp_text[1] = ' ';
+          }
         } else {  // d_pad == 1
           if (d_divider == 0) {
             strftime(disp_text, 10, " %m%d%Y", &timeinfo);
@@ -545,6 +564,7 @@ void set_disp_text(int disp_mode, char* disp_text, int num) {
     case 5:  // Wifi error
       digitalWrite(VFBLANK, LOW);
       sprintf(disp_text, " %-8s", "net err");
+      dns_server.processNextRequest();
       break;
 
     case 6:  // AP active
@@ -727,12 +747,15 @@ void setup() {
     // Connect to WiFi
     init_wifi();
     if (!wifi_connected) {
+      Serial.print("\n");
       Serial.println("Wifi timed out");
       init_ap();
+      ap_active = 1;
     }
   } else {
     // Start AP
     init_ap();
+    ap_active = 1;
   }
 
   // Sync time if wifi connected
