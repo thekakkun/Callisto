@@ -19,6 +19,7 @@ int wifi_connected = 0;
 int time_synced = 0;
 int ap_active = 0;
 int server_active = 0;
+int at_night = 0;
 
 // PWM and photoresistor
 const int LDR_PIN = 32;
@@ -128,12 +129,12 @@ void init_wifi() {
   WiFi.setHostname(HOSTNAME);
   WiFi.begin(ssid.c_str(), password.c_str());
 
-  int wifi_start = millis();
+  unsigned long wifi_start = millis();
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
-    unsigned long now = millis();
-    if (wifi_start + WIFI_TIMEOUT < now) {
+    unsigned long now_ms = millis();
+    if (wifi_start + WIFI_TIMEOUT < now_ms) {
       break;
     }
   }
@@ -321,20 +322,20 @@ void adjust_brightness() {
 void set_touch_state(int& touch_state, int& previous_touch_state,
                      unsigned long& touch_start, unsigned long& touch_end) {
   uint16_t touch_value;
-  unsigned long now = millis();
+  unsigned long now_ms = millis();
 
   touch_pad_read_filtered(TOUCH_PAD_NUM3, &touch_value);
 
   if (touch_value < TOUCH_THRESHOLD) {
     touch_state = 1;
     if (previous_touch_state == 0) {
-      touch_start = now;
+      touch_start = now_ms;
       Serial.println("Touch start");
     }
   } else {
     touch_state = 0;
     if (previous_touch_state == 1) {
-      touch_end = now;
+      touch_end = now_ms;
       Serial.println("Touch end");
     }
   }
@@ -346,21 +347,22 @@ int get_mode() {
   const int SERVER_START = 10 * 1000;
   const int SERVER_TIMEOUT = 10 * 60 * 1000;
 
-  unsigned long now = millis();
+  unsigned long now_ms = millis();
   static int touch_state = 0;
   int previous_touch_state = touch_state;
   static unsigned long touch_start = 0, touch_end = 0;
   static unsigned long server_start_time;
 
   if (!wifi_connected) {
-    if (ap_active) {
-      return 6;  // AP active
+    if (!ap_active) {
+      return 5;  // AP active
     } else {
-      return 5;  // wifi error
+      // TODO: this isn't being displayed with wifi timeout
+      return 6;  // wifi error
     }
 
   } else if (server_active) {
-    if (now - server_start_time < SERVER_TIMEOUT) {
+    if (now_ms - server_start_time < SERVER_TIMEOUT) {
       return 3;  // Config server active
     } else {
       server.end();
@@ -369,23 +371,49 @@ int get_mode() {
     }
 
   } else {
+    time_t now = time(0);
+    struct tm timeinfo = *localtime(&now);
+
+    if (night_start_h == timeinfo.tm_hour) {
+      if (night_start_m <= timeinfo.tm_min) {
+        at_night = 1;
+      }
+    } else if (night_start_h <= timeinfo.tm_hour) {
+      at_night = 1;
+    }
+
+    if (night_end_h == timeinfo.tm_hour) {
+      if (night_end_m <= timeinfo.tm_min) {
+        at_night = 0;
+      }
+    } else if (night_end_h <= timeinfo.tm_hour) {
+      at_night = 0;
+    }
+
     set_touch_state(touch_state, previous_touch_state, touch_start, touch_end);
 
     if (touch_state &&
-        now - touch_start > SERVER_START) {  // hold for [server start] ms
+        now_ms - touch_start > SERVER_START) {  // hold for [server start] ms
       server_start_time = millis();
       return 3;  // Config server active
     } else if (!time_synced) {
-      time_t now = time(0);
-      struct tm timeinfo = *localtime(&now);
       if (timeinfo.tm_year > 70) {
         time_synced = 1;
       }
       return 4;  // Syncing
-    } else if (now - touch_end < SHOW_FOR) {
-      return 2;  // show date
+    } else if (now_ms - touch_end < SHOW_FOR) {
+      if (at_night) {
+        return 0;  // show time
+      } else {
+        return 2;  // show date
+      }
+
     } else {
-      return 0;  // Show time
+      if (at_night) {
+        return 1;  // night mode
+      } else {
+        return 0;  // Show time
+      }
     }
   }
 }
@@ -522,9 +550,9 @@ void set_disp_text(int disp_mode, char* disp_text, int num) {
 }
 
 void dot_scroll(int* dots) {
-  int time = millis();
+  unsigned long now_ms = millis();
 
-  dots[(time / 500) % 8 + 1] = 1;
+  dots[(now_ms / 500) % 8 + 1] = 1;
 }
 
 void set_dots(int disp_mode, int* dots) {
@@ -683,10 +711,10 @@ void run_utilities() {
 void setup() {
   Serial.begin(115200);
 
-  init_brightness();  // Initialize PWM and photoresistor
-  init_touch();       // Init touch sensor
-  init_spi();         // Init SPI
-  init_spiffs();      // Initialize SPIFFS
+  init_brightness();
+  init_touch();
+  init_spi();
+  init_spiffs();
   init_preference();
 
   if (credentials_saved) {
