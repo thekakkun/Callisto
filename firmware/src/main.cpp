@@ -50,8 +50,8 @@ int t_divider = 0;  // [0]: space, [1]: hyphen
 int d_format = 0;   // [0]: MMDDYYYY, [1]: DDMMYYYY
 int d_pad = 0;      // [0]: No pad, [1]: Zero pad
 int d_divider = 0;  // [0] dot, [1] hyphen, [2] space
-int lo_darkness = 2;
-int hi_darkness = 9;
+int lo_brightness = 2;
+int hi_brightness = 9;
 int night_start_h = 0, night_start_m = 0, night_end_h = 6, night_end_m = 0;
 String time_zone = "EST5EDT,M3.2.0,M11.1.0";
 
@@ -99,8 +99,8 @@ void init_preference() {
   d_pad = preferences.getInt("d_pad", d_pad);
   d_divider = preferences.getInt("d_divider", d_divider);
 
-  lo_darkness = preferences.getInt("lo_darkness", lo_darkness);
-  hi_darkness = preferences.getInt("hi_darkness", hi_darkness);
+  lo_brightness = preferences.getInt("lo_brightness", lo_brightness);
+  hi_brightness = preferences.getInt("hi_brightness", hi_brightness);
 
   night_start_h = preferences.getInt("night_start_h", night_start_h);
   night_start_m = preferences.getInt("night_start_m", night_start_m);
@@ -184,10 +184,10 @@ String processor(const String& var) {
       if (var == "d_divider_opt_" + String(d_divider)) {
         return F("selected");
       }
-    } else if (var == "lo_darkness") {
-      return String(lo_darkness);
-    } else if (var == "hi_darkness") {
-      return String(hi_darkness);
+    } else if (var == "lo_brightness") {
+      return String(lo_brightness);
+    } else if (var == "hi_brightness") {
+      return String(hi_brightness);
     } else if (var.indexOf("night_") >= 0) {
       char out[2];
       if (var == "night_start_h") {
@@ -306,15 +306,21 @@ void init_sntp() {
 
 // Set brightness PWM based on ambient brightness
 void adjust_brightness() {
-  const int V_IN = 9, MIN_V = 20, MAX_V = 30;
+  // TODO: Set reasonable range for MIN_V and MAX_V
+  const int V_IN = 9, MIN_V = 15, MAX_V = 35, V_LIM = 50;
   const int V_RANGE = MAX_V - MIN_V;
   const float ETA = 0.8;
 
+  // max and min output voltage, based on user set preferences
+  float lo_brightness_v = MIN_V + float(V_RANGE * (lo_brightness - 1) / 9);
+  float hi_brightness_v = MIN_V + float(V_RANGE * (hi_brightness - 1) / 9);
+  float brightness_v_range = hi_brightness_v - lo_brightness_v;
+
   int brightness = analogRead(LDR_PIN);
-  float ambient_brightness_p = 1 - float(brightness - min_brightness) /
-                                       (max_brightness - min_brightness);
-  float v_out = MIN_V + V_RANGE * ambient_brightness_p;
-  int duty = int(256 * (V_IN * ETA / v_out));
+  float ambient_brightness_p =
+      float(brightness - min_brightness) / (max_brightness - min_brightness);
+  float v_out = lo_brightness_v + ambient_brightness_p * brightness_v_range;
+  int duty = int(255 * (V_IN * ETA / (V_LIM - v_out)));
 
   ledcWrite(PWM_CHANNEL, duty);
 }
