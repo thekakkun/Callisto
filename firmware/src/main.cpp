@@ -85,7 +85,6 @@ void init_spi() {
 }
 
 void init_preference() {
-  // TODO: Change display based on these
   preferences.begin("config");
 
   ssid = preferences.getString("ssid", ssid);
@@ -305,8 +304,7 @@ void init_sntp() {
 
 // Set brightness PWM based on ambient brightness
 void adjust_brightness() {
-  // TODO: Set reasonable range for MIN_V and MAX_V
-  const int V_IN = 9, MIN_V = 15, MAX_V = 35, V_LIM = 50;
+  const int V_IN = 9, MIN_V = 15, MAX_V = 40, V_LIM = 55;
   const int V_RANGE = MAX_V - MIN_V;
   const float ETA = 0.8;
 
@@ -353,16 +351,19 @@ int set_night() {
   if (night_start_h == timeinfo.tm_hour) {
     if (night_start_m <= timeinfo.tm_min) {
       return 1;
-    }
-  } else if (night_start_h <= timeinfo.tm_hour) {
-    return 1;
-  }
-
-  if (night_end_h == timeinfo.tm_hour) {
-    if (night_end_m <= timeinfo.tm_min) {
+    } else {
       return 0;
     }
-  } else if (night_end_h <= timeinfo.tm_hour) {
+  } else if (night_start_h <= timeinfo.tm_hour &&
+             timeinfo.tm_hour <= night_end_h) {
+    return 1;
+  } else if (timeinfo.tm_hour == night_end_h) {
+    if (timeinfo.tm_min <= night_end_m) {
+      return 1;
+    } else {
+      return 0;
+    }
+  } else {
     return 0;
   }
 }
