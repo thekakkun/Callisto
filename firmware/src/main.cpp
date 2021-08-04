@@ -728,11 +728,19 @@ void set_brightness_range() {
   }
 }
 void run_utilities() {
-  // time_t now = time(0);
-  // struct tm timeinfo = *localtime(&now);
   set_brightness_range();
 
-  // TODO: Brightness dampener
+  const int UTILITY_FREQUENCY = 1000 * 60 * 60 * 24 * 2;
+  const float DAMP_P = .02;
+  static unsigned long now_ms = millis();
+  unsigned long last_run = 0;
+
+  if (now_ms - last_run >= UTILITY_FREQUENCY) {
+    last_run = now_ms;
+    int brightness_mean = (max_brightness + min_brightness) / 2;
+    max_brightness = max(int(max_brightness * (1 - DAMP_P)), brightness_mean);
+    min_brightness = min(int(max_brightness * (1 + DAMP_P)), brightness_mean);
+  }
 }
 
 void setup() {
