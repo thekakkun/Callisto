@@ -7,6 +7,7 @@
 #include <SPIFFS.h>
 #include <WiFi.h>
 #include <esp32-hal-touch.h>
+#include <esp_pm.h>
 #include <esp_sntp.h>
 
 _VOID _EXFUN(tzset, (_VOID));
@@ -122,6 +123,8 @@ void init_spiffs() {
 
 void init_wifi() {
   const int WIFI_TIMEOUT = 10000;
+
+  WiFi.setSleep(true);
 
   Serial.printf("Connecting to %s ", ssid.c_str());
   WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE);
@@ -745,6 +748,13 @@ void run_utilities() {
 
 void setup() {
   Serial.begin(115200);
+
+  esp_pm_config_esp32_t pm_config;
+  pm_config.max_freq_mhz = 160;
+  pm_config.min_freq_mhz = 80;
+  pm_config.light_sleep_enable = true;
+
+  esp_pm_configure(&pm_config);
 
   init_brightness();
   init_touch();
