@@ -15,15 +15,16 @@ int _EXFUN(setenv,
            (const char* __string, const char* __value, int __overwrite));
 
 // Flags
-int credentials_saved = 0;
-int wifi_connected = 0;
-int time_synced = 0;
-int ap_active = 0;
-int server_active = 0;
-int at_night = 0;
+bool credentials_saved = false;
+bool wifi_connected = false;
+bool time_synced = false;
+bool ap_active = false;
+bool server_active = false;
+bool at_night = false;
 
 // PWM and photoresistor
 const int LDR_PIN = 32;
+const int LED_PIN = 21;
 const int PWM_CHANNEL = 0;
 int min_brightness, max_brightness;
 
@@ -68,12 +69,14 @@ void init_brightness() {
   max_brightness = brightness;
   min_brightness = brightness - 1;
 }
+
 void init_touch() {
   touch_pad_init();
   touch_pad_set_fsm_mode(TOUCH_FSM_MODE_TIMER);
   touch_pad_config(TOUCH_PAD_NUM3, TOUCH_THRESHOLD);
   touch_pad_filter_start(10);
 }
+
 void init_spi() {
   const int SPI_FREQ = 500000;
 
@@ -111,7 +114,7 @@ void init_preference() {
 
   if (ssid.compareTo("") == 0) {
   } else {
-    credentials_saved = 1;
+    credentials_saved = true;
   }
 }
 
@@ -142,7 +145,8 @@ void init_wifi() {
   }
 
   if (WiFi.status() == WL_CONNECTED) {
-    wifi_connected = 1;
+    WiFi.setSleep(true);
+    wifi_connected = true;
     Serial.println(" CONNECTED!");
     Serial.print("Local Address: ");
     Serial.println(WiFi.localIP());
@@ -274,6 +278,7 @@ void init_ap() {
   server.addHandler(new CaptiveRequestHandler()).setFilter(ON_AP_FILTER);
 
   server.begin();
+  ap_active = true;
   Serial.print("AP Address: ");
   Serial.println(WiFi.softAPIP());
 }
@@ -287,6 +292,7 @@ void init_server() {
   server.on("/cancel", HTTP_GET, on_cancel);
 
   server.begin();
+  server_active = true;
 }
 
 void init_sntp() {
@@ -334,12 +340,16 @@ void set_touch_state(int& touch_state, int& previous_touch_state,
 
   if (touch_value < TOUCH_THRESHOLD) {
     touch_state = 1;
+    // #FIXME: Touch detect
+    digitalWrite(LED_PIN, HIGH);
     if (previous_touch_state == 0) {
       touch_start = now_ms;
       Serial.println("Touch start");
     }
   } else {
     touch_state = 0;
+    // #FIXME: Touch detect
+    digitalWrite(LED_PIN, LOW);
     if (previous_touch_state == 1) {
       touch_end = now_ms;
       Serial.println("Touch end");
@@ -347,27 +357,27 @@ void set_touch_state(int& touch_state, int& previous_touch_state,
   }
 }
 
-int set_night() {
+bool set_night() {
   time_t now = time(0);
   struct tm timeinfo = *localtime(&now);
 
   if (night_start_h == timeinfo.tm_hour) {
     if (night_start_m <= timeinfo.tm_min) {
-      return 1;
+      return true;
     } else {
-      return 0;
+      return false;
     }
   } else if (night_start_h <= timeinfo.tm_hour &&
              timeinfo.tm_hour <= night_end_h) {
-    return 1;
+    return true;
   } else if (timeinfo.tm_hour == night_end_h) {
     if (timeinfo.tm_min <= night_end_m) {
-      return 1;
+      return true;
     } else {
-      return 0;
+      return false;
     }
   } else {
-    return 0;
+    return false;
   }
 }
 
@@ -415,7 +425,7 @@ int get_mode() {
       struct tm timeinfo = *localtime(&now);
 
       if (timeinfo.tm_year > 70) {
-        time_synced = 1;
+        time_synced = true;
       }
       // time syncing -> show boot
       return 4;
@@ -450,7 +460,7 @@ void set_disp_text(int disp_mode, char* disp_text, int num) {
       digitalWrite(VFBLANK, LOW);
       if (server_active) {
         server.end();
-        server_active = 0;
+        server_active = false;
       }
 
       now = time(0);
@@ -488,6 +498,7 @@ void set_disp_text(int disp_mode, char* disp_text, int num) {
       break;
 
     case 1:  // off
+             // TODO: set to sleep mode. wake up via touch or timer? program?
       digitalWrite(VFBLANK, HIGH);
       break;
 
@@ -554,7 +565,6 @@ void set_disp_text(int disp_mode, char* disp_text, int num) {
       digitalWrite(VFBLANK, LOW);
       if (!server_active) {
         init_server();
-        server_active = 1;
       }
       sprintf(disp_text, "%9d", WiFi.localIP()[3]);
       break;
@@ -748,6 +758,11 @@ void run_utilities() {
 
 void setup() {
   Serial.begin(115200);
+  // #FIXME: touch detect LED
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);
+
+  // #TODO: Some sort of light wifi mode?
 
   esp_pm_config_esp32_t pm_config;
   pm_config.max_freq_mhz = 160;
@@ -769,12 +784,10 @@ void setup() {
       Serial.print("\n");
       Serial.println("Wifi timed out");
       init_ap();
-      ap_active = 1;
     }
   } else {
     // Start AP
     init_ap();
-    ap_active = 1;
   }
 
   // Sync time if wifi connected
