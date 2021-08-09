@@ -73,7 +73,7 @@ void init_brightness() {
 void init_touch() {
   touch_pad_init();
   touch_pad_set_fsm_mode(TOUCH_FSM_MODE_TIMER);
-  touch_pad_config(TOUCH_PAD_NUM3, TOUCH_THRESHOLD);
+  touch_pad_config(TOUCH_PAD_GPIO15_CHANNEL, TOUCH_THRESHOLD);
   touch_pad_filter_start(10);
 }
 
@@ -127,8 +127,6 @@ void init_spiffs() {
 void init_wifi() {
   const int WIFI_TIMEOUT = 10000;
 
-  WiFi.setSleep(true);
-
   Serial.printf("Connecting to %s ", ssid.c_str());
   WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE);
   WiFi.setHostname(HOSTNAME);
@@ -145,6 +143,7 @@ void init_wifi() {
   }
 
   if (WiFi.status() == WL_CONNECTED) {
+    // TODO: Wifi sleep
     WiFi.setSleep(true);
     wifi_connected = true;
     Serial.println(" CONNECTED!");
@@ -331,7 +330,7 @@ void adjust_brightness() {
   ledcWrite(PWM_CHANNEL, duty);
 }
 
-void set_touch_state(int& touch_state, int& previous_touch_state,
+void set_touch_state(bool& touch_state, bool& previous_touch_state,
                      unsigned long& touch_start, unsigned long& touch_end) {
   uint16_t touch_value;
   unsigned long now_ms = millis();
@@ -339,18 +338,16 @@ void set_touch_state(int& touch_state, int& previous_touch_state,
   touch_pad_read_filtered(TOUCH_PAD_NUM3, &touch_value);
 
   if (touch_value < TOUCH_THRESHOLD) {
-    touch_state = 1;
-    // #FIXME: Touch detect
+    touch_state = true;
     digitalWrite(LED_PIN, HIGH);
-    if (previous_touch_state == 0) {
+    if (!previous_touch_state) {
       touch_start = now_ms;
       Serial.println("Touch start");
     }
   } else {
-    touch_state = 0;
-    // #FIXME: Touch detect
+    touch_state = false;
     digitalWrite(LED_PIN, LOW);
-    if (previous_touch_state == 1) {
+    if (previous_touch_state) {
       touch_end = now_ms;
       Serial.println("Touch end");
     }
@@ -388,8 +385,8 @@ int get_mode() {
   const int SERVER_TIMEOUT = 10 * 60 * 1000;
 
   unsigned long now_ms = millis();
-  static int touch_state = 0;
-  int previous_touch_state = touch_state;
+  static bool touch_state = false;
+  bool previous_touch_state = touch_state;
   static unsigned long touch_start = 0, touch_end = 0;
   static unsigned long server_start_time;
 
@@ -498,7 +495,7 @@ void set_disp_text(int disp_mode, char* disp_text, int num) {
       break;
 
     case 1:  // off
-             // TODO: set to sleep mode. wake up via touch or timer? program?
+      // TODO: set to sleep mode. wake up via touch or timer? program?
       digitalWrite(VFBLANK, HIGH);
       break;
 
@@ -758,12 +755,11 @@ void run_utilities() {
 
 void setup() {
   Serial.begin(115200);
-  // #FIXME: touch detect LED
+  // FIXME: touch detect LED
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
 
-  // #TODO: Some sort of light wifi mode?
-
+  // TODO: Some sort of light wifi mode?
   esp_pm_config_esp32_t pm_config;
   pm_config.max_freq_mhz = 160;
   pm_config.min_freq_mhz = 80;
