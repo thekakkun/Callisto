@@ -1,0 +1,27 @@
+.title KiCad schematic
+J1 Net-_F1-Pad2_ GND Jack-DC
+C1 +9V GND 0.1U
+C2 +9V GND 10U/25V
+D1 Net-_D1-Pad1_ VCC 1N5817
+C3 VCC GND 220U/6V
+U2 +9V GND VCC L7805
+C5 +9V GND 47U/25V
+L1 +9V Net-_D3-Pad2_ 2220U
+Q1 Net-_D3-Pad2_ NC_01 GND Q_NMOS_DGS
+C6 VBB GND 33U/100V
+C4 VCC GND 0.1U
+D4 VBB GND D_Zener
+D3 VBB Net-_D3-Pad2_ MBR160
+F1 Net-_D2-Pad2_ Net-_F1-Pad2_ Fuse
+U1 +3V3 NC_02 NC_03 NC_04 NC_05 NC_06 NC_07 NC_08 NC_09 NC_10 /BLANK NC_11 NC_12 GND NC_13 NC_14 NC_15 NC_16 Net-_D1-Pad1_ GND NC_17 NC_18 NC_19 NC_20 NC_21 GND /DIN /CLK /LOAD NC_22 NC_23 NC_24 NC_25 NC_26 NC_27 NC_28 NC_29 NC_30 ESP32-DevKitC
+C7 VBB GND 0.1U/100V
+D2 +9V Net-_D2-Pad2_ MBR160
+J3 NC_31 /fil_g /fil_v /dig_9 /dig_8 /dig_7 /dig_6 /dig_5 /dig_4 /dig_3 /dig_2 /dig_1 /seg_h /seg_g /seg_f /seg_e /seg_d /seg_c /seg_b /seg_a Conn_01x20
+DS1 /fil_g /seg_h /seg_d /seg_c /seg_e NC_32 NC_33 NC_34 /seg_g /seg_b /seg_f /seg_a /fil_v /dig_9 /dig_1 /dig_3 /dig_5 /dig_8 /dig_7 /dig_6 /dig_4 /dig_2 IV-18
+J2 NC_35 GND Net-_J2-Pad3_ NC_36 NC_37 NC_38 NC_39 NC_40 NC_41 NC_42 NC_43 NC_44 NC_45 NC_46 NC_47 NC_48 NC_49 NC_50 NC_51 NC_52 Conn_01x20
+R1 +3V3 /BRIGHTNESS LDR07
+R2 /BRIGHTNESS GND 10K
+R3 VCC Net-_J2-Pad3_ 22
+TP1 NC_53 Touchpad
+U3 NC_54 NC_55 NC_56 NC_57 NC_58 /DIN VCC VBB NC_59 NC_60 NC_61 NC_62 NC_63 NC_64 NC_65 NC_66 NC_67 NC_68 NC_69 /BLANK GND /CLK /LOAD NC_70 NC_71 NC_72 NC_73 NC_74 MAX6921AUI+
+.end

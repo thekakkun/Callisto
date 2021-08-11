@@ -23,8 +23,8 @@ bool server_active = false;
 bool at_night = false;
 
 // PWM and photoresistor
-const int LDR_PIN = 32;
-const int LED_PIN = 21;
+const int LDR_PIN = 36;
+const int LED_PIN = 0;
 const int PWM_CHANNEL = 0;
 int min_brightness, max_brightness;
 
@@ -33,7 +33,7 @@ const int TOUCH_THRESHOLD = 150;
 
 // SPI interface
 const int VFLOAD = 5;
-const int VFBLANK = 27;
+const int VFBLANK = 21;
 
 // Network
 DNSServer dns_server;
@@ -58,7 +58,7 @@ int night_start_h = 0, night_start_m = 0, night_end_h = 6, night_end_m = 0;
 String time_zone = "EST5EDT,M3.2.0,M11.1.0";
 
 void init_brightness() {
-  const int PWM_PIN = 16;
+  const int PWM_PIN = 32;
   const int PWM_FREQ = 31250;
   const int PWM_RESOLUTION = 8;
 
