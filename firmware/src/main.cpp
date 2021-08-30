@@ -10,6 +10,8 @@
 #include <esp_pm.h>
 #include <esp_sntp.h>
 
+#include "settings.h"
+
 _VOID _EXFUN(tzset, (_VOID));
 int _EXFUN(setenv,
            (const char* __string, const char* __value, int __overwrite));
@@ -24,7 +26,7 @@ bool at_night = false;
 
 // PWM and photoresistor
 const int LDR_PIN = 36;
-const int LED_PIN = 0;
+const int LED_PIN = 0;  // FIXME: Delete later
 const int PWM_CHANNEL = 0;
 int min_brightness, max_brightness;
 
@@ -47,20 +49,7 @@ const char* HOSTNAME = "Callisto";
 const char* AP_SSID = "callisto_config";
 const char* AP_PASSWORD = "12345678";
 
-// Config defaults
-Preferences preferences;
-String ssid = "";
-String password = "";
-int t_format = 0;   // [0]: 12 with dot, [1]: 12 without dot, [2]: 24
-int t_pad = 0;      // [0]: no pad, [1]: zero pad
-int t_divider = 0;  // [0]: space, [1]: hyphen
-int d_format = 0;   // [0]: MMDDYYYY, [1]: DDMMYYYY
-int d_pad = 0;      // [0]: No pad, [1]: Zero pad
-int d_divider = 0;  // [0] dot, [1] hyphen, [2] space
-int lo_brightness = 2;
-int hi_brightness = 9;
-int night_start_h = 0, night_start_m = 0, night_end_h = 6, night_end_m = 0;
-String time_zone = "EST5EDT,M3.2.0,M11.1.0";
+CallistoSettings settings;
 
 void init_brightness() {
   const int PWM_PIN = 32;
@@ -94,36 +83,6 @@ void init_spi() {
   SPI.beginTransaction(SPISettings(SPI_FREQ, MSBFIRST, SPI_MODE0));
 }
 
-void init_preference() {
-  preferences.begin("config");
-
-  ssid = preferences.getString("ssid", ssid);
-  password = preferences.getString("password", password);
-
-  t_format = preferences.getInt("t_format", t_format);
-  t_pad = preferences.getInt("t_pad", t_pad);
-  t_divider = preferences.getInt("t_divider", t_divider);
-
-  d_format = preferences.getInt("d_format", d_format);
-  d_pad = preferences.getInt("d_pad", d_pad);
-  d_divider = preferences.getInt("d_divider", d_divider);
-
-  lo_brightness = preferences.getInt("lo_brightness", lo_brightness);
-  hi_brightness = preferences.getInt("hi_brightness", hi_brightness);
-
-  night_start_h = preferences.getInt("night_start_h", night_start_h);
-  night_start_m = preferences.getInt("night_start_m", night_start_m);
-  night_end_h = preferences.getInt("night_end_h", night_end_h);
-  night_end_m = preferences.getInt("night_end_m", night_end_m);
-
-  time_zone = preferences.getString("time_zone", time_zone);
-
-  if (ssid.compareTo("") == 0) {
-  } else {
-    credentials_saved = true;
-  }
-}
-
 void init_spiffs() {
   if (!SPIFFS.begin(true)) {
     Serial.println("Error mounting SPIFFS");
@@ -133,10 +92,10 @@ void init_spiffs() {
 void init_wifi() {
   const int WIFI_TIMEOUT = 10000;
 
-  Serial.printf("Connecting to %s ", ssid.c_str());
+  Serial.printf("Connecting to %s ", settings.ssid.c_str());
   WiFi.config(INADDR_NONE, INADDR_NONE, INADDR_NONE, INADDR_NONE);
   WiFi.setHostname(HOSTNAME);
-  WiFi.begin(ssid.c_str(), password.c_str());
+  WiFi.begin(settings.ssid.c_str(), settings.password.c_str());
 
   unsigned long wifi_start = millis();
   while (WiFi.status() != WL_CONNECTED) {
@@ -160,9 +119,9 @@ void init_wifi() {
 
 String processor(const String& var) {
   if (var == "ssid") {
-    return ssid;
+    return settings.ssid;
   } else if (var == "password") {
-    return password;
+    return settings.password;
   }
   if (ap_active) {
     if (var == "ap_hide_begin") {
@@ -172,47 +131,47 @@ String processor(const String& var) {
     }
   } else {
     if (var.indexOf("t_format_opt_") >= 0) {
-      if (var == "t_format_opt_" + String(t_format)) {
+      if (var == "t_format_opt_" + String(settings.t_format)) {
         return F("selected");
       }
     } else if (var.indexOf("t_pad_opt_") >= 0) {
-      if (var == "t_pad_opt_" + String(t_pad)) {
+      if (var == "t_pad_opt_" + String(settings.t_pad)) {
         return F("selected");
       }
     } else if (var.indexOf("t_divider_opt_") >= 0) {
-      if (var == "t_divider_opt_" + String(t_divider)) {
+      if (var == "t_divider_opt_" + String(settings.t_divider)) {
         return F("selected");
       }
     } else if (var.indexOf("d_format_opt_") >= 0) {
-      if (var == "d_format_opt_" + String(d_format)) {
+      if (var == "d_format_opt_" + String(settings.d_format)) {
         return F("selected");
       }
     } else if (var.indexOf("d_pad_opt_") >= 0) {
-      if (var == "d_pad_opt_" + String(d_pad)) {
+      if (var == "d_pad_opt_" + String(settings.d_pad)) {
         return F("selected");
       }
     } else if (var.indexOf("d_divider_opt_") >= 0) {
-      if (var == "d_divider_opt_" + String(d_divider)) {
+      if (var == "d_divider_opt_" + String(settings.d_divider)) {
         return F("selected");
       }
     } else if (var == "lo_brightness") {
-      return String(lo_brightness);
+      return String(settings.lo_brightness);
     } else if (var == "hi_brightness") {
-      return String(hi_brightness);
+      return String(settings.hi_brightness);
     } else if (var.indexOf("night_") >= 0) {
       char out[2];
       if (var == "night_start_h") {
-        sprintf(out, "%02d", night_start_h);
+        sprintf(out, "%02d", settings.night_start_h);
       } else if (var == "night_start_m") {
-        sprintf(out, "%02d", night_start_m);
+        sprintf(out, "%02d", settings.night_start_m);
       } else if (var == "night_end_h") {
-        sprintf(out, "%02d", night_end_h);
+        sprintf(out, "%02d", settings.night_end_h);
       } else if (var == "night_end_m") {
-        sprintf(out, "%02d", night_end_m);
+        sprintf(out, "%02d", settings.night_end_m);
       }
       return String(out);
     } else if (var == "time_zone") {
-      return time_zone;
+      return settings.time_zone;
     }
   }
 
@@ -237,15 +196,19 @@ void on_get(AsyncWebServerRequest* request) {
 
     if (p->name() == "ssid" || p->name() == "password" ||
         p->name() == "time_zone") {  // Save as Strings
-      preferences.putString(p->name().c_str(), p->value());
+      settings.preferences.putString(p->name().c_str(), p->value());
     } else if (p->name() == "night_start") {
-      preferences.putInt("night_start_h", p->value().substring(0, 2).toInt());
-      preferences.putInt("night_end_m", p->value().substring(3, 5).toInt());
+      settings.preferences.putInt("night_start_h",
+                                  p->value().substring(0, 2).toInt());
+      settings.preferences.putInt("night_end_m",
+                                  p->value().substring(3, 5).toInt());
     } else if (p->name() == "night_end") {
-      preferences.putInt("night_end_h", p->value().substring(0, 2).toInt());
-      preferences.putInt("night_end_m", p->value().substring(3, 5).toInt());
+      settings.preferences.putInt("night_end_h",
+                                  p->value().substring(0, 2).toInt());
+      settings.preferences.putInt("night_end_m",
+                                  p->value().substring(3, 5).toInt());
     } else {  // Save as ints
-      preferences.putInt(p->name().c_str(), p->value().toInt());
+      settings.preferences.putInt(p->name().c_str(), p->value().toInt());
     }
   }
 
@@ -259,7 +222,7 @@ void on_factory_reset(AsyncWebServerRequest* request) {
                 "reboot.\n\nYou may "
                 "close this page.");
 
-  preferences.clear();
+  settings.preferences.clear();
   server.end();
   ESP.restart();
 }
@@ -367,7 +330,7 @@ void init_font_table() {
     }
   }
 
-  const int DOT_SEGMENT_OUT = 18;
+  const int DOT_SEGMENT_OUT = 18;  // Decimal point segment
   dot = 1 << DOT_SEGMENT_OUT;
 
   const int GRID_OUT[] = {
@@ -398,7 +361,7 @@ void init_sntp() {
   }
   sntp_init();
 
-  setenv("TZ", time_zone.c_str(), 1);
+  setenv("TZ", settings.time_zone.c_str(), 1);
   tzset();
 }
 
@@ -409,8 +372,10 @@ void adjust_brightness() {
   const float ETA = 0.8;
 
   // max and min output voltage, based on user set preferences
-  float lo_brightness_v = MIN_V + float(V_RANGE * (lo_brightness - 1) / 9);
-  float hi_brightness_v = MIN_V + float(V_RANGE * (hi_brightness - 1) / 9);
+  float lo_brightness_v =
+      MIN_V + float(V_RANGE * (settings.lo_brightness - 1) / 9);
+  float hi_brightness_v =
+      MIN_V + float(V_RANGE * (settings.hi_brightness - 1) / 9);
   float brightness_v_range = hi_brightness_v - lo_brightness_v;
 
   int brightness = analogRead(LDR_PIN);
@@ -431,14 +396,14 @@ void set_touch_state(bool& touch_state, bool& previous_touch_state,
 
   if (touch_value < TOUCH_THRESHOLD) {
     touch_state = true;
-    digitalWrite(LED_PIN, HIGH);
+    digitalWrite(LED_PIN, HIGH);  // FIXME: Delete later
     if (!previous_touch_state) {
       touch_start = now_ms;
       Serial.println("Touch start");
     }
   } else {
     touch_state = false;
-    digitalWrite(LED_PIN, LOW);
+    digitalWrite(LED_PIN, LOW);  // FIXME: Delete later
     if (previous_touch_state) {
       touch_end = now_ms;
       Serial.println("Touch end");
@@ -450,17 +415,17 @@ bool set_night() {
   time_t now = time(0);
   struct tm timeinfo = *localtime(&now);
 
-  if (night_start_h == timeinfo.tm_hour) {
-    if (night_start_m <= timeinfo.tm_min) {
+  if (settings.night_start_h == timeinfo.tm_hour) {
+    if (settings.night_start_m <= timeinfo.tm_min) {
       return true;
     } else {
       return false;
     }
-  } else if (night_start_h <= timeinfo.tm_hour &&
-             timeinfo.tm_hour <= night_end_h) {
+  } else if (settings.night_start_h <= timeinfo.tm_hour &&
+             timeinfo.tm_hour <= settings.night_end_h) {
     return true;
-  } else if (timeinfo.tm_hour == night_end_h) {
-    if (timeinfo.tm_min <= night_end_m) {
+  } else if (timeinfo.tm_hour == settings.night_end_h) {
+    if (timeinfo.tm_min <= settings.night_end_m) {
       return true;
     } else {
       return false;
@@ -555,29 +520,29 @@ void set_disp_text(int disp_mode, char* disp_text, int num) {
       now = time(0);
       timeinfo = *localtime(&now);
 
-      if (t_format == 0 || t_format == 1) {
-        if (t_pad == 0) {
-          if (t_divider == 0) {
+      if (settings.t_format == 0 || settings.t_format == 1) {
+        if (settings.t_pad == 0) {
+          if (settings.t_divider == 0) {
             strftime(disp_text, 10, " %l %M %S", &timeinfo);
           } else {  // t_divider == 1
             strftime(disp_text, 10, " %l-%M-%S", &timeinfo);
           }
         } else {  // t_pad == 1
-          if (t_divider == 0) {
+          if (settings.t_divider == 0) {
             strftime(disp_text, 10, " %I %M %S", &timeinfo);
           } else {  // t_divider == 1
             strftime(disp_text, 10, " %I-%M-%S", &timeinfo);
           }
         }
       } else {  // t_format == 2
-        if (t_pad == 0) {
-          if (t_divider == 0) {
+        if (settings.t_pad == 0) {
+          if (settings.t_divider == 0) {
             strftime(disp_text, 10, " %k %M %S", &timeinfo);
           } else {  // t_divider == 1
             strftime(disp_text, 10, " %k-%M-%S", &timeinfo);
           }
         } else {  // t_pad == 1
-          if (t_divider == 0) {
+          if (settings.t_divider == 0) {
             strftime(disp_text, 10, " %H %M %S", &timeinfo);
           } else {  // t_divider == 1
             strftime(disp_text, 10, " %H-%M-%S", &timeinfo);
@@ -597,11 +562,11 @@ void set_disp_text(int disp_mode, char* disp_text, int num) {
       now = time(0);
       timeinfo = *localtime(&now);
 
-      if (d_format == 0) {
-        if (d_pad == 0) {
-          if (d_divider == 0) {
+      if (settings.d_format == 0) {
+        if (settings.d_pad == 0) {
+          if (settings.d_divider == 0) {
             strftime(disp_text, 10, " %m%e%Y", &timeinfo);
-          } else if (d_divider == 1) {
+          } else if (settings.d_divider == 1) {
             strftime(disp_text, 10, " %m-%e-%y", &timeinfo);
           } else {  // d_divider == 2
             strftime(disp_text, 10, " %m %e %y", &timeinfo);
@@ -610,22 +575,22 @@ void set_disp_text(int disp_mode, char* disp_text, int num) {
             disp_text[1] = ' ';
           }
         } else {  // d_pad == 1
-          if (d_divider == 0) {
+          if (settings.d_divider == 0) {
             strftime(disp_text, 10, " %m%d%Y", &timeinfo);
-          } else if (d_divider == 1) {
+          } else if (settings.d_divider == 1) {
             strftime(disp_text, 10, " %m-%d-%y", &timeinfo);
           } else {  // d_divider == 2
             strftime(disp_text, 10, " %m %d %y", &timeinfo);
           }
         }
       } else {  // d_format == 1
-        if (d_pad == 0) {
-          if (d_divider == 0) {
+        if (settings.d_pad == 0) {
+          if (settings.d_divider == 0) {
             strftime(disp_text, 10, " %e%m%Y", &timeinfo);
             if (disp_text[3] == '0') {
               disp_text[3] = ' ';
             }
-          } else if (d_divider == 1) {
+          } else if (settings.d_divider == 1) {
             strftime(disp_text, 10, " %e-%m-%y", &timeinfo);
             if (disp_text[4] == '0') {
               disp_text[4] = ' ';
@@ -637,9 +602,9 @@ void set_disp_text(int disp_mode, char* disp_text, int num) {
             }
           }
         } else {
-          if (d_divider == 0) {
+          if (settings.d_divider == 0) {
             strftime(disp_text, 10, " %d%m%Y", &timeinfo);
-          } else if (d_divider == 1) {
+          } else if (settings.d_divider == 1) {
             strftime(disp_text, 10, " %d-%m-%y", &timeinfo);
           } else {  // d_divider == 2
             strftime(disp_text, 10, " %d %m %y", &timeinfo);
@@ -687,7 +652,7 @@ void dot_scroll(int* dots) {
 void set_dots(int disp_mode, int* dots) {
   switch (disp_mode) {
     case 0:  // Time
-      if (t_format == 0) {
+      if (settings.t_format == 0) {
         char am_pm[3];
 
         time_t now = time(0);
@@ -704,7 +669,7 @@ void set_dots(int disp_mode, int* dots) {
       break;
 
     case 2:  // date
-      if (d_divider == 0) {
+      if (settings.d_divider == 0) {
         dots[2] = 1;
         dots[4] = 1;
       }
@@ -787,9 +752,8 @@ void run_utilities() {
 
 void setup() {
   Serial.begin(115200);
-  // FIXME: touch detect LED
-  pinMode(LED_PIN, OUTPUT);
-  digitalWrite(LED_PIN, LOW);
+  pinMode(LED_PIN, OUTPUT);    // FIXME: Delete later
+  digitalWrite(LED_PIN, LOW);  // FIXME: Delete later
 
   // TODO: Some sort of energy saving mode
   esp_pm_config_esp32_t pm_config;
@@ -803,7 +767,12 @@ void setup() {
   init_touch();
   init_spi();
   init_spiffs();
-  init_preference();
+
+  settings.init();
+  if (settings.ssid.compareTo("") == 0) {
+  } else {
+    credentials_saved = true;
+  }
 
   if (credentials_saved) {
     // Connect to WiFi
