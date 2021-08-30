@@ -4,6 +4,13 @@ Callisto is a digital clock that uses a Soviet-era IV-18 vacuum fluorescent tube
 
 The name *Callisto* was chosen so that the name could be displed on an 8-digit seven-segment display.
 
+## Features:
+- Sync time, retrieved using WiFi
+- Automatically switch to daylight saving time
+- Clock display settings configured using web browser
+- Automatic shutoff during night hours in order to decrease energy usage and extend tube life
+- Auto-dimming based on ambient light conditions
+
 ## Special thanks
 
 The software and hardware design of the clock was ~~stolen from~~ heavily inspired by the following projects:
