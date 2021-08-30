@@ -35,6 +35,11 @@ const int TOUCH_THRESHOLD = 150;
 const int VFLOAD = 5;
 const int VFBLANK = 21;
 
+// Font Table
+int font_table[46];
+int digit_table[9];
+int dot;
+
 // Network
 DNSServer dns_server;
 AsyncWebServer server(80);
@@ -71,6 +76,7 @@ void init_brightness() {
 }
 
 void init_touch() {
+  // TODO: Use interrupt?
   touch_pad_init();
   touch_pad_set_fsm_mode(TOUCH_FSM_MODE_TIMER);
   touch_pad_config(TOUCH_PAD_GPIO15_CHANNEL, TOUCH_THRESHOLD);
@@ -272,6 +278,7 @@ class CaptiveRequestHandler : public AsyncWebHandler {
 };
 
 void init_ap() {
+  // TODO: List visible SSIDs
   WiFi.softAP(AP_SSID, AP_PASSWORD);
   dns_server.start(53, "*", WiFi.softAPIP());
   server.addHandler(new CaptiveRequestHandler()).setFilter(ON_AP_FILTER);
@@ -293,6 +300,91 @@ void init_server() {
   server.begin();
   server_active = true;
 }
+
+void init_font_table() {
+  const int SEGMENT_OUT[] = {
+      11,  // Segment A
+      13,  // Segment B
+      16,  // Segment C
+      17,  // Segment D
+      15,  // Segment E
+      12,  // Segment F
+      14   // Segment G
+  };
+  const int SEGMENTS[] = {
+      0x40,  // -
+      0x00,  // .
+      0x00,  // /
+      0x3F,  // 0
+      0x06,  // 1
+      0x5B,  // 2
+      0x4F,  // 3
+      0x66,  // 4
+      0x6D,  // 5
+      0x7D,  // 6
+      0x07,  // 7
+      0x7F,  // 8
+      0x6F,  // 9
+      0x00,  // :
+      0x00,  // ;
+      0x00,  // <
+      0x00,  // =
+      0x00,  // >
+      0x00,  // ?
+      0x00,  // @
+      0x77,  // A
+      0x7C,  // B
+      0x39,  // C
+      0x5E,  // D
+      0x79,  // E
+      0x71,  // F
+      0x3D,  // G
+      0x76,  // H
+      0x30,  // I
+      0x1E,  // J
+      0x00,  // K
+      0x38,  // L
+      0x00,  // M
+      0x54,  // N
+      0x3F,  // O
+      0x73,  // P
+      0x67,  // Q
+      0x50,  // R
+      0x6D,  // S
+      0x78,  // T
+      0x3E,  // U
+      0x00,  // V
+      0x00,  // W
+      0x00,  // X
+      0x6E,  // Y
+      0x00   // Z
+  };
+  for (int i = 0; i < sizeof(SEGMENTS) / sizeof(SEGMENTS[0]); i++) {
+    for (int j = 0; j < 7; j++) {
+      if (bitRead(SEGMENTS[i], j)) {
+        bitSet(font_table[i], SEGMENT_OUT[j]);
+      }
+    }
+  }
+
+  const int DOT_SEGMENT_OUT = 18;
+  dot = 1 << DOT_SEGMENT_OUT;
+
+  const int GRID_OUT[] = {
+      9,  // Digit 9
+      5,  // Digit 8
+      3,  // Digit 7
+      2,  // Digit 6
+      6,  // Digit 5
+      1,  // Digit 4
+      7,  // Digit 3
+      0,  // Digit 2
+      8   // Digit 1
+  };
+  for (int i = 0; i < sizeof(GRID_OUT) / sizeof(GRID_OUT[0]); i++) {
+    bitSet(digit_table[i], GRID_OUT[i]);
+  }
+};
 
 void init_sntp() {
   const char* const ntp_server[] = {
@@ -633,72 +725,12 @@ void set_dots(int disp_mode, int* dots) {
 
 // Character to SPI out data via font table
 int get_spi_data(int current_digit, char* disp_text, int* dots) {
-  const int FONT_TABLE[] = {
-      0b000000000100000000000000,  // -
-      0b000000000000000000000000,  // .
-      0b000000000000000000000000,  // /
-      0b000000111011100000000000,  // 0
-      0b000000010010000000000000,  // 1
-      0b000000101110100000000000,  // 2
-      0b000000110110100000000000,  // 3
-      0b000000010111000000000000,  // 4
-      0b000000110101100000000000,  // 5
-      0b000000111101100000000000,  // 6
-      0b000000010010100000000000,  // 7
-      0b000000111111100000000000,  // 8
-      0b000000110111100000000000,  // 9
-      0b000000000000000000000000,  // :
-      0b000000000000000000000000,  // ;
-      0b000000000000000000000000,  // <
-      0b000000000000000000000000,  // =
-      0b000000000000000000000000,  // >
-      0b000000000000000000000000,  // ?
-      0b000000000000000000000000,  // @
-      0b000000011111100000000000,  // A
-      0b000000111101000000000000,  // B
-      0b000000101001100000000000,  // C
-      0b000000111110000000000000,  // D
-      0b000000101101100000000000,  // E
-      0b000000001101100000000000,  // F
-      0b000000111001100000000000,  // G
-      0b000000011111000000000000,  // H
-      0b000000001001000000000000,  // I
-      0b000000111010000000000000,  // J
-      0b000000000000000000000000,  // K
-      0b000000101001000000000000,  // L
-      0b000000000000000000000000,  // M
-      0b000000011100000000000000,  // N
-      0b000000111011100000000000,  // O
-      0b000000001111100000000000,  // P
-      0b000000010111100000000000,  // Q
-      0b000000001100000000000000,  // R
-      0b000000110101100000000000,  // S
-      0b000000101101000000000000,  // T
-      0b000000111011000000000000,  // U
-      0b000000000000000000000000,  // V
-      0b000000000000000000000000,  // W
-      0b000000000000000000000000,  // X
-      0b000000110111000000000000,  // Y
-      0b000000000000000000000000   // Z
-  };
-  const int DOT = 0b000001000000000000000000;  // Dot
-  const int DIGIT_TABLE[] = {
-      0b000000000000001000000000,  // Digit 1
-      0b000000000000000000100000,  // Digit 2
-      0b000000000000000000001000,  // Digit 3
-      0b000000000000000000000100,  // Digit 4
-      0b000000000000000001000000,  // Digit 5
-      0b000000000000000000000010,  // Digit 6
-      0b000000000000000010000000,  // Digit 7
-      0b000000000000000000000001,  // Digit 8
-      0b000000000000000100000000,  // Digit 9
-  };
   unsigned char chr = disp_text[current_digit];
   int spi_data;
 
   // If character is space, show dot or nothing at all
   if (chr <= (unsigned char)' ') {
-    spi_data = dots[current_digit] * (DOT + DIGIT_TABLE[current_digit]);
+    spi_data = dots[current_digit] * (dot + digit_table[current_digit]);
     return spi_data;
   }
   // Else, retrieve data based on font table
@@ -710,9 +742,9 @@ int get_spi_data(int current_digit, char* disp_text, int* dots) {
       return 0;
     }
   }
-  spi_data = FONT_TABLE[chr - '-'];
-  spi_data += dots[current_digit] * DOT;
-  spi_data += DIGIT_TABLE[current_digit];
+  spi_data = font_table[chr - '-'];
+  spi_data += dots[current_digit] * dot;
+  spi_data += digit_table[current_digit];
 
   return spi_data;
 }
@@ -759,7 +791,7 @@ void setup() {
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
 
-  // TODO: Some sort of light wifi mode?
+  // TODO: Some sort of energy saving mode
   esp_pm_config_esp32_t pm_config;
   pm_config.max_freq_mhz = 160;
   pm_config.min_freq_mhz = 80;
@@ -788,6 +820,7 @@ void setup() {
 
   // Sync time if wifi connected
   if (wifi_connected) {
+    init_font_table();
     init_sntp();
   }
 }
