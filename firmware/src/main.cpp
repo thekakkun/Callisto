@@ -54,9 +54,11 @@ const char* AP_SSID = "callisto_config";
 const char* AP_PASSWORD = "12345678";
 
 void init_brightness() {
-  /* Define light dependent resistor (LDR) input and PWM output for boost
-converter
- */
+  /* Define pulse wave modulation (PWM) output pin for boost converter and input
+   * for light dependent resistor (LDR)
+   * Max and min brightness is set from the LDR at this point so that the
+   * brightness range is not zero during later calculations
+   */
 
   const int PWM_PIN = 32;
   const int PWM_FREQ = 31250;
@@ -71,11 +73,16 @@ converter
 }
 
 void touch_callback() {
-  // placeholder callback
+  /* placeholder callback for if I need it.
+   */
 }
 
 void init_touch() {
-  // TODO: Use interrupt?
+  /* Set touch pad pin and filter.
+   * Callback needs to be set in order to use touch sensor to wake from deep
+   * sleep
+   */
+
   touch_pad_init();
   touch_pad_set_fsm_mode(TOUCH_FSM_MODE_TIMER);
   touch_pad_config(TOUCH_PAD_GPIO15_CHANNEL, TOUCH_THRESHOLD);
@@ -85,6 +92,10 @@ void init_touch() {
 }
 
 void init_spi() {
+  /* Initialize the serial peripheral interface (SPI) that will communicate
+   * with the MAX9621 VFD driver chip.
+   */
+
   const int SPI_FREQ = 500000;
 
   pinMode(VFLOAD, OUTPUT);
@@ -96,12 +107,20 @@ void init_spi() {
 }
 
 void init_spiffs() {
+  /* Initialize the SPIFFS, which is used to store the settings webpage data and
+   * user preferences.
+   */
+
   if (!SPIFFS.begin(true)) {
     Serial.println("Error mounting SPIFFS");
   }
 }
 
 void init_wifi() {
+  /* Initialize the wifi. The variable WIFI_TIMEOUT will set how long before
+   * wifi connection is deemed a failure.
+   */
+
   const int WIFI_TIMEOUT = 10000;
 
   Serial.printf("Connecting to %s ", settings.ssid.c_str());
@@ -130,6 +149,11 @@ void init_wifi() {
 }
 
 String processor(const String& var) {
+  /* Processor replaces placeholder string within the webpage, based on user
+   * preferences, or default values if not found.
+   * In addition, this is used to only show wifi settings if in AP mode.
+   */
+
   if (var == "ssid") {
     return settings.ssid;
   } else if (var == "password") {
@@ -191,12 +215,19 @@ String processor(const String& var) {
 }
 
 void on_cancel(AsyncWebServerRequest* request) {
+  /* If cancel button on settings page is clicked
+   */
+
   request->send(
       200, "text/plain",
       "Preferences closed without saving.\n\nYou may now close this page.");
 }
 
 void on_get(AsyncWebServerRequest* request) {
+  /* If submit button on settings page is clicked, save them using the
+   * preferences library.
+   */
+
   request->send(200, "text/plain",
                 "Preferences saved.\nCallisto will now reboot.\n\nYou may "
                 "close this page.");
@@ -229,6 +260,9 @@ void on_get(AsyncWebServerRequest* request) {
 }
 
 void on_factory_reset(AsyncWebServerRequest* request) {
+  /* If reset button on settings page is clicked, delete all preferences and
+   * reboot.
+   */
   request->send(200, "text/plain",
                 "All preferences reset to factory defaults.\nCallisto will now "
                 "reboot.\n\nYou may "
@@ -253,6 +287,10 @@ class CaptiveRequestHandler : public AsyncWebHandler {
 };
 
 void init_ap() {
+  /* Initialize the access point (AP), with a captive portal that will
+   * automatically be shown once connected.
+   */
+
   // TODO: List visible SSIDs
   WiFi.softAP(AP_SSID, AP_PASSWORD);
   dns_server.start(53, "*", WiFi.softAPIP());
@@ -265,6 +303,9 @@ void init_ap() {
 }
 
 void init_server() {
+  /* Initialize the settings webpage server
+   */
+
   server.on("/", HTTP_GET, [](AsyncWebServerRequest* request) {
     request->send(SPIFFS, "/index.html", String(), false, processor);
   });
@@ -277,6 +318,10 @@ void init_server() {
 }
 
 void init_font_table() {
+  /* Create the font table and digit grid output based on which pins are being
+   * used on the MAX6921 VFD driver chip.
+   */
+
   const int SEGMENT_OUT[] = {
       11,  // Segment A
       13,  // Segment B
@@ -362,6 +407,10 @@ void init_font_table() {
 };
 
 void init_sntp() {
+  /* Connect to the the simple network time protocol (SNTP) server, and retrieve
+   * the current time. Also set the time zone based on user settings.
+   */
+
   const char* const ntp_server[] = {
       "pool.ntp.org",   "0.pool.ntp.org", "1.pool.ntp.org",
       "2.pool.ntp.org", "3.pool.ntp.org",
@@ -377,8 +426,13 @@ void init_sntp() {
   tzset();
 }
 
-// Set brightness PWM based on ambient brightness
 void adjust_brightness() {
+  /* Set the anode voltage based on ambient brightness.
+   * Target voltages used in the calculation do not reflect actual boost
+   * converter outputs for whatever reason...
+   */
+
+  // TODO: Use PWM blanking instead of boost converter voltage?
   const int V_IN = 9, MIN_V = 15, MAX_V = 40, V_LIM = 55;
   const int V_RANGE = MAX_V - MIN_V;
   const float ETA = 0.8;
@@ -401,6 +455,9 @@ void adjust_brightness() {
 
 void set_touch_state(bool& touch_state, bool& previous_touch_state,
                      unsigned long& touch_start, unsigned long& touch_end) {
+  /* Figure out when touch starts and ends, and set the time in ms.
+   */
+
   uint16_t touch_value;
   unsigned long now_ms = millis();
 
@@ -423,7 +480,10 @@ void set_touch_state(bool& touch_state, bool& previous_touch_state,
   }
 }
 
-bool set_night() {
+bool is_night() {
+  /* Figure out if night mode should be active
+   */
+
   time_t now = time(0);
   struct tm timeinfo = *localtime(&now);
 
@@ -447,8 +507,17 @@ bool set_night() {
   }
 }
 
-// Get mode based on success flags, current time, and touch reading
 int get_mode() {
+  /* Get display mode based on success flags, current time, and touch reading
+   * 0: Time (everything okay)
+   * 1: Sleep (at night)
+   * 2: Date (touch detected)
+   * 3: IP address (server is active)
+   * 4: NTP syncing (wifi connected, getting time)
+   * 5: Wifi error (wifi config exists, but timed out)
+   * 6: AP active (AP is active)
+   */
+
   const int SHOW_FOR = 5 * 1000;
   const int SERVER_START = 10 * 1000;
   const int SERVER_TIMEOUT = 10 * 60 * 1000;
@@ -480,7 +549,6 @@ int get_mode() {
 
   } else {
     set_touch_state(touch_state, previous_touch_state, touch_start, touch_end);
-    at_night = set_night();
 
     time_t now = time(0);
     struct tm timeinfo = *localtime(&now);
@@ -498,7 +566,7 @@ int get_mode() {
       // time syncing -> show boot
       return 4;
 
-    } else if (at_night) {
+    } else if (is_night()) {
       if (now_ms - touch_end < SHOW_FOR + 5000) {
         // touched at night -> show time for longer
         // (to accomodate for waking from deep sleep)
@@ -516,23 +584,13 @@ int get_mode() {
         return 0;
       }
     }
-
-    //    else if (now_ms - touch_end < SHOW_FOR) {
-    //     if (at_night) {
-    //       // touched at night -> show time
-    //       return 0;
-    //     } else {
-
-    //     }
-
-    //   } else {
-    //     if (at_night) {
-
-    //     } else {
   }
 }
 
 void set_disp_text(int disp_mode, char* disp_text, int num) {
+  /* Set display data based on display mode
+   */
+
   time_t now;
   struct tm timeinfo;
 
@@ -698,12 +756,18 @@ void set_disp_text(int disp_mode, char* disp_text, int num) {
 }
 
 void dot_scroll(int* dots) {
+  /* Generate array for scrolling dots
+   */
+
   unsigned long now_ms = millis();
 
   dots[(now_ms / 500) % 8 + 1] = 1;
 }
 
 void set_dots(int disp_mode, int* dots) {
+  /* Set decimal point display based on display mode and settings.
+   */
+
   switch (disp_mode) {
     case 0:  // Time
       if (settings.t_format == 0) {
@@ -742,8 +806,11 @@ void set_dots(int disp_mode, int* dots) {
   }
 }
 
-// Character to SPI out data via font table
 int get_spi_data(int current_digit, char* disp_text, int* dots) {
+  /* Based on character string and current digit, generate data to be sent via
+   * SPI
+   */
+
   unsigned char chr = disp_text[current_digit];
   int spi_data;
 
@@ -768,8 +835,10 @@ int get_spi_data(int current_digit, char* disp_text, int* dots) {
   return spi_data;
 }
 
-// Send data via SPI
 void send_spi_data(int spi_data) {
+  /* Send data via SPI
+   */
+
   digitalWrite(VFLOAD, LOW);
   for (int i = 0; i < 3; i++) {
     int tube_out = (unsigned int)spi_data >> (8 * (2 - i)) & 0xff;
@@ -778,7 +847,13 @@ void send_spi_data(int spi_data) {
   digitalWrite(VFLOAD, HIGH);
 }
 
-void set_brightness_range() {
+void brightness_utilities() {
+  /* Various utilities regarding brightness
+   * Set min and max brightness, based on what was seen
+   * Shrink brightness range every 2 days, in order to account for brightness
+   * outliers.
+   */
+
   int brightness = analogRead(LDR_PIN);
 
   if (max_brightness < brightness) {
@@ -787,9 +862,6 @@ void set_brightness_range() {
   if (brightness < min_brightness) {
     min_brightness = brightness;
   }
-}
-void run_utilities() {
-  set_brightness_range();
 
   const int UTILITY_FREQUENCY = 1000 * 60 * 60 * 24 * 2;
   const float DAMP_P = .02;
@@ -865,7 +937,7 @@ void loop() {
   int spi_data = get_spi_data(current_digit, disp_text, dots);
   send_spi_data(spi_data);
 
-  run_utilities();
+  brightness_utilities();
 
   current_digit++;
   current_digit %= 9;
