@@ -8,8 +8,10 @@
 #include <WiFi.h>
 #include <esp32-hal-touch.h>
 #include <esp_pm.h>
+#include <esp_sleep.h>
 #include <esp_sntp.h>
 
+#include "server.h"
 #include "settings.h"
 
 _VOID _EXFUN(tzset, (_VOID));
@@ -42,6 +44,8 @@ int font_table[46];
 int digit_table[9];
 int dot;
 
+CallistoSettings settings;
+
 // Network
 DNSServer dns_server;
 AsyncWebServer server(80);
@@ -49,9 +53,11 @@ const char* HOSTNAME = "Callisto";
 const char* AP_SSID = "callisto_config";
 const char* AP_PASSWORD = "12345678";
 
-CallistoSettings settings;
-
 void init_brightness() {
+  /* Define light dependent resistor (LDR) input and PWM output for boost
+converter
+ */
+
   const int PWM_PIN = 32;
   const int PWM_FREQ = 31250;
   const int PWM_RESOLUTION = 8;
@@ -64,12 +70,18 @@ void init_brightness() {
   min_brightness = brightness - 1;
 }
 
+void touch_callback() {
+  // placeholder callback
+}
+
 void init_touch() {
   // TODO: Use interrupt?
   touch_pad_init();
   touch_pad_set_fsm_mode(TOUCH_FSM_MODE_TIMER);
   touch_pad_config(TOUCH_PAD_GPIO15_CHANNEL, TOUCH_THRESHOLD);
   touch_pad_filter_start(10);
+  touchAttachInterrupt(TOUCH_PAD_GPIO15_CHANNEL, touch_callback,
+                       TOUCH_THRESHOLD);
 }
 
 void init_spi() {
@@ -415,23 +427,23 @@ bool set_night() {
   time_t now = time(0);
   struct tm timeinfo = *localtime(&now);
 
-  if (settings.night_start_h == timeinfo.tm_hour) {
-    if (settings.night_start_m <= timeinfo.tm_min) {
-      return true;
-    } else {
-      return false;
-    }
-  } else if (settings.night_start_h <= timeinfo.tm_hour &&
-             timeinfo.tm_hour <= settings.night_end_h) {
-    return true;
-  } else if (timeinfo.tm_hour == settings.night_end_h) {
-    if (timeinfo.tm_min <= settings.night_end_m) {
+  int current_time = timeinfo.tm_hour * 100 + timeinfo.tm_min;
+  static int night_start =
+      settings.night_start_h * 100 + settings.night_start_m;
+  static int night_end = settings.night_end_h * 100 + settings.night_end_m;
+
+  if (night_start < night_end) {
+    if (night_start <= current_time && current_time < night_end) {
       return true;
     } else {
       return false;
     }
   } else {
-    return false;
+    if (night_start <= current_time || current_time < night_end) {
+      return true;
+    } else {
+      return false;
+    }
   }
 }
 
@@ -441,7 +453,7 @@ int get_mode() {
   const int SERVER_START = 10 * 1000;
   const int SERVER_TIMEOUT = 10 * 60 * 1000;
 
-  unsigned long now_ms = millis();
+  unsigned long now_ms;
   static bool touch_state = false;
   bool previous_touch_state = touch_state;
   static unsigned long touch_start = 0, touch_end = 0;
@@ -457,6 +469,7 @@ int get_mode() {
     }
 
   } else if (server_active) {
+    now_ms = millis();
     if (now_ms - server_start_time < SERVER_TIMEOUT) {
       // server active, not timed out -> show IP
       return 3;
@@ -469,39 +482,53 @@ int get_mode() {
     set_touch_state(touch_state, previous_touch_state, touch_start, touch_end);
     at_night = set_night();
 
+    time_t now = time(0);
+    struct tm timeinfo = *localtime(&now);
+
+    now_ms = millis();
     if (touch_state && now_ms - touch_start > SERVER_START) {
       server_start_time = millis();
       // held for long time -> start server
       return 3;
 
     } else if (!time_synced) {
-      time_t now = time(0);
-      struct tm timeinfo = *localtime(&now);
-
       if (timeinfo.tm_year > 70) {
         time_synced = true;
       }
       // time syncing -> show boot
       return 4;
 
-    } else if (now_ms - touch_end < SHOW_FOR) {
-      if (at_night) {
-        // touched at night -> show time
+    } else if (at_night) {
+      if (now_ms - touch_end < SHOW_FOR + 5000) {
+        // touched at night -> show time for longer
+        // (to accomodate for waking from deep sleep)
         return 0;
       } else {
-        // touched during day -> show date
-        return 2;
-      }
-
-    } else {
-      if (at_night) {
         // night -> clock off
         return 1;
+      }
+    } else {
+      if (now_ms - touch_end < SHOW_FOR) {
+        // touched during day -> show date
+        return 2;
       } else {
         // day -> show time
         return 0;
       }
     }
+
+    //    else if (now_ms - touch_end < SHOW_FOR) {
+    //     if (at_night) {
+    //       // touched at night -> show time
+    //       return 0;
+    //     } else {
+
+    //     }
+
+    //   } else {
+    //     if (at_night) {
+
+    //     } else {
   }
 }
 
@@ -512,6 +539,9 @@ void set_disp_text(int disp_mode, char* disp_text, int num) {
   switch (disp_mode) {
     case 0:  // Time
       digitalWrite(VFBLANK, LOW);
+      touch_pad_set_fsm_mode(TOUCH_FSM_MODE_DEFAULT);
+      esp_sleep_enable_touchpad_wakeup();
+
       if (server_active) {
         server.end();
         server_active = false;
@@ -551,10 +581,34 @@ void set_disp_text(int disp_mode, char* disp_text, int num) {
       }
       break;
 
-    case 1:  // off
-      // TODO: set to sleep mode. wake up via touch or timer? program?
+    case 1: {  // off
       digitalWrite(VFBLANK, HIGH);
+
+      time_t now = time(0);
+      struct tm timeinfo = *localtime(&now);
+
+      int current_time = timeinfo.tm_hour * 100 + timeinfo.tm_min;
+      int night_end = settings.night_end_h * 100 + settings.night_end_m;
+      int deep_sleep_sec;
+
+      if (current_time < night_end) {
+        deep_sleep_sec = (settings.night_end_h - timeinfo.tm_hour) * 60 * 60 +
+                         (settings.night_end_m - timeinfo.tm_min) * 60 +
+                         (0 - timeinfo.tm_sec);
+      } else {
+        deep_sleep_sec =
+            (settings.night_end_h - timeinfo.tm_hour + 24) * 60 * 60 +
+            (settings.night_end_m - timeinfo.tm_min) * 60 +
+            (0 - timeinfo.tm_sec);
+      }
+
+      touch_pad_set_fsm_mode(TOUCH_FSM_MODE_TIMER);
+      esp_sleep_enable_touchpad_wakeup();
+      esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
+      esp_deep_sleep(deep_sleep_sec * 1000000);
+
       break;
+    }
 
     case 2:  // date
       digitalWrite(VFBLANK, LOW);
