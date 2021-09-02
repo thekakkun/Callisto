@@ -20,7 +20,11 @@
             <div class="field">
               <label class="label" for="ssid">WiFi SSID:</label>
               <div class="control">
-                <input class="input" type="text" id="ssid" name="ssid" value="%ssid%">
+                <!-- <input class="input" type="text" id="ssid" name="ssid" value="%ssid%"> -->
+                <input class="input" list="ssid_list" name="ssid" id="ssid" value="%ssid%" autocomplete="off">
+                <datalist id="ssid_list">
+                  %ssid_list%
+                </datalist>
               </div>
             </div>
             <div class="field"><label class="label" for="pwd">WiFi Password: </label>
