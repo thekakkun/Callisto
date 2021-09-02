@@ -27,7 +27,8 @@ bool at_night = false;
 const int LDR_PIN = 36;
 const int LED_PIN = 0; // FIXME: Delete later
 const int PWM_CHANNEL = 0;
-int min_brightness, max_brightness;
+int min_brightness = 2500;
+int max_brightness = 3500;
 
 // Touch
 const int TOUCH_THRESHOLD = 150;
@@ -62,11 +63,6 @@ void init_brightness()
 
   ledcSetup(PWM_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
   ledcAttachPin(PWM_PIN, PWM_CHANNEL);
-
-  int brightness = analogRead(LDR_PIN);
-  // TODO: Set more reasonable brightness range
-  max_brightness = brightness;
-  min_brightness = brightness - 1;
 }
 
 void touch_callback()
@@ -1104,7 +1100,7 @@ void brightness_utilities()
    */
 
   int brightness = analogRead(LDR_PIN);
-
+  
   if (max_brightness < brightness)
   {
     max_brightness = brightness;
@@ -1147,8 +1143,8 @@ void setup()
   init_spi();
   init_spiffs();
   init_font_table();
-
   settings.init();
+
   if (settings.ssid.compareTo("") != 0)
   {
     credentials_saved = true;
