@@ -14,6 +14,7 @@ void set_touch_state(bool &touch_state, bool &previous_touch_state,
                      unsigned long &touch_start, unsigned long &touch_end);
 
 extern bool ap_active;
+extern bool wifi_connected;
 extern bool credentials_saved;
 extern bool server_active;
 extern bool time_synced;

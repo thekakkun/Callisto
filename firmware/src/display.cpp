@@ -128,7 +128,7 @@ int get_mode()
     static unsigned long touch_start{0}, touch_end{0};
     static unsigned long server_start_time;
 
-    if (ap_active)
+    if (!wifi_connected)
     {
         if (credentials_saved)
         {
@@ -418,12 +418,24 @@ void set_text(int disp_mode, char *disp_text)
     case 5: // Wifi error
         digitalWrite(VFBLANK, LOW);
         sprintf(disp_text, " %-8s", "net err");
+
+        if (!ap_active)
+        {
+            ssid_options = get_ssids();
+            init_ap();
+        }
         dns_server.processNextRequest();
         break;
 
     case 6: // AP active
         digitalWrite(VFBLANK, LOW);
         sprintf(disp_text, " %-8s", "connect");
+
+        if (!ap_active)
+        {
+            ssid_options = get_ssids();
+            init_ap();
+        }
         dns_server.processNextRequest();
         break;
     }

@@ -8,9 +8,6 @@
 #include <SPIFFS.h>
 #include <Preferences.h>
 
-extern DNSServer dns_server;
-extern AsyncWebServer server;
-
 class CallistoSettings
 {
 public:
@@ -56,6 +53,8 @@ void on_factory_reset(AsyncWebServerRequest *request);
 * automatically be shown once connected.
 */
 
+extern DNSServer dns_server;
+extern AsyncWebServer server;
 void init_ap();
 
 /* Initialize the settings webpage server

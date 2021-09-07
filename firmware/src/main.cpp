@@ -47,7 +47,6 @@ void setup()
   pm_config.max_freq_mhz = 160;
   pm_config.min_freq_mhz = 80;
   pm_config.light_sleep_enable = true;
-
   esp_pm_configure(&pm_config);
 
   init_brightness();
@@ -55,6 +54,7 @@ void setup()
   init_spi();
   init_spiffs();
   init_font_table();
+
   settings.init();
 
   if (settings.ssid.compareTo("") != 0)
@@ -64,23 +64,9 @@ void setup()
 
   if (credentials_saved)
   {
-    // Connect to WiFi
     init_wifi();
-    if (!wifi_connected)
-    {
-      Serial.print("\n");
-      Serial.println("Wifi timed out");
-      init_ap();
-    }
-  }
-  else
-  {
-    // Start AP
-    ssid_options = get_ssids();
-    init_ap();
   }
 
-  // Sync time if wifi connected
   if (wifi_connected)
   {
     init_sntp();

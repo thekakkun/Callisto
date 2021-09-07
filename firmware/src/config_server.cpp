@@ -45,20 +45,7 @@ public:
     }
 };
 
-String get_ssids()
-{
-    String ssid_options = "";
-    int n = WiFi.scanNetworks();
 
-    for (int i{0}; i < n; ++i)
-    {
-        ssid_options += "<option value=\"";
-        ssid_options += WiFi.SSID(i);
-        ssid_options += "\">\n";
-    }
-
-    return ssid_options;
-}
 
 String processor(const String &var)
 {
@@ -250,12 +237,28 @@ void on_factory_reset(AsyncWebServerRequest *request)
     ESP.restart();
 }
 
+String get_ssids()
+{
+    String ssid_options = "";
+    int n = WiFi.scanNetworks();
+
+    for (int i{0}; i < n; ++i)
+    {
+        ssid_options += "<option value=\"";
+        ssid_options += WiFi.SSID(i);
+        ssid_options += "\">\n";
+    }
+
+    return ssid_options;
+}
+
 void init_ap()
 {
     /* Initialize the access point (AP), with a captive portal that will
    * automatically be shown once connected.
    */
 
+    Serial.println("Starting access point");
     const char *AP_SSID = "callisto_config";
     const char *AP_PASSWORD = "12345678";
 

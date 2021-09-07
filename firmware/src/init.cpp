@@ -100,6 +100,11 @@ void init_wifi()
         Serial.print("Local Address: ");
         Serial.println(WiFi.localIP());
     }
+    else
+    {
+        Serial.print("\n");
+        Serial.println("Wifi timed out");
+    }
 }
 
 void init_font_table()
