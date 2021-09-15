@@ -204,11 +204,12 @@ void set_text(int disp_mode, char *disp_text)
     /* Set display data based on display mode
    */
 
-    time_t now;
-    struct tm timeinfo;
-
     switch (disp_mode)
     {
+        time_t now;
+        struct tm timeinfo;
+        int current_time, night_end, deep_sleep_sec;
+
     case 0: // Time
         digitalWrite(VFBLANK, LOW);
         touch_pad_set_fsm_mode(TOUCH_FSM_MODE_DEFAULT);
@@ -279,10 +280,10 @@ void set_text(int disp_mode, char *disp_text)
     { // off
         digitalWrite(VFBLANK, HIGH);
 
-        time_t now = time(0);
-        struct tm timeinfo = *localtime(&now);
+        now = time(0);
+        timeinfo = *localtime(&now);
 
-        int current_time, night_end, deep_sleep_sec;
+        current_time, night_end, deep_sleep_sec;
         current_time = timeinfo.tm_hour * 100 + timeinfo.tm_min;
         night_end = settings.night_end_h * 100 + settings.night_end_m;
 
@@ -458,13 +459,16 @@ void set_dots(int disp_mode, int *dots)
 
     switch (disp_mode)
     {
+        time_t now;
+        struct tm timeinfo;
+
+        char am_pm[3];
+
     case 0: // Time
         if (settings.t_format == 0)
         {
-            char am_pm[3];
-
-            time_t now = time(0);
-            struct tm timeinfo = *localtime(&now);
+            now = time(0);
+            timeinfo = *localtime(&now);
             strftime(am_pm, 3, "%p", &timeinfo);
 
             if (strcmp(am_pm, "PM") == 0)
