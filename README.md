@@ -15,5 +15,5 @@ The name *Callisto* was chosen so that the name could be displed on an 8-digit s
 
 The software and hardware design of the clock was ~~stolen from~~ heavily inspired by the following projects:
 
-- [Ice Tube Clock by Lady Ada](https://github.com/mcer12/Flora-ESP8266)
+- [Ice Tube Clock by Lady Ada](https://learn.adafruit.com/ice-tube-clock-kit/)
 - [Flora-ESP8266 by mcer12](https://github.com/mcer12/Flora-ESP8266)
