@@ -13,9 +13,9 @@ void adjust_brightness(int min_brightness, int max_brightness)
     constexpr int V_IN{9}, MIN_V{15}, MAX_V{40}, V_LIM{55};
     const int V_RANGE{MAX_V - MIN_V};
     constexpr float ETA{0.8};
-    float lo_brightness_v, hi_brightness_v, brightness_v_range;
-    float ambient_brightness_p, v_out;
-    int duty;
+    float lo_brightness_v{}, hi_brightness_v{}, brightness_v_range{};
+    float ambient_brightness_p{}, v_out{};
+    int duty{};
 
     // max and min output voltage, based on user set preferences
     lo_brightness_v =
@@ -30,6 +30,9 @@ void adjust_brightness(int min_brightness, int max_brightness)
     v_out = lo_brightness_v + ambient_brightness_p * brightness_v_range;
     duty = int(255 * (V_IN * ETA / (V_LIM - v_out)));
 
+    // TODO: For testing. Delete later.
+    duty = 172;
+
     ledcWrite(PWM_CHANNEL, duty);
 }
 
@@ -39,15 +42,16 @@ void set_touch_state(bool &touch_state, bool &previous_touch_state,
     /* Figure out when touch starts and ends, and set the time in ms.
    */
 
-    uint16_t touch_value;
+    uint16_t touch_value{};
     unsigned long now_ms{millis()};
 
     touch_pad_read_filtered(TOUCH_PAD_NUM3, &touch_value);
+    // Serial.println(touch_value);
 
     if (touch_value < TOUCH_THRESHOLD)
     {
         touch_state = true;
-        digitalWrite(LED_PIN, HIGH); // FIXME: Delete later
+
         if (!previous_touch_state)
         {
             touch_start = now_ms;
@@ -57,7 +61,7 @@ void set_touch_state(bool &touch_state, bool &previous_touch_state,
     else
     {
         touch_state = false;
-        digitalWrite(LED_PIN, LOW); // FIXME: Delete later
+
         if (previous_touch_state)
         {
             touch_end = now_ms;
@@ -74,8 +78,8 @@ bool is_night()
     time_t now{time(0)};
     struct tm timeinfo = *localtime(&now);
 
-    int current_time;
-    static int night_start, night_end;
+    int current_time{};
+    static int night_start{}, night_end{};
 
     current_time = timeinfo.tm_hour * 100 + timeinfo.tm_min;
     night_start =
@@ -109,6 +113,7 @@ bool is_night()
 int get_mode()
 {
     /* Get display mode based on success flags, current time, and touch reading
+    TODO: Use enum type to make it easier to parse
    * 0: Time (everything okay)
    * 1: Sleep (at night)
    * 2: Date (touch detected)
@@ -122,11 +127,11 @@ int get_mode()
     constexpr unsigned int SERVER_START{10 * 1000};
     constexpr unsigned int SERVER_TIMEOUT{10 * 60 * 1000};
 
-    unsigned long now_ms;
+    unsigned long now_ms{};
     static bool touch_state{false};
     bool previous_touch_state{touch_state};
     static unsigned long touch_start{0}, touch_end{0};
-    static unsigned long server_start_time;
+    static unsigned long server_start_time{};
 
     if (!wifi_connected)
     {
@@ -277,13 +282,12 @@ void set_text(int disp_mode, char *disp_text)
         break;
 
     case 1:
-    { // off
+        // off
         digitalWrite(VFBLANK, HIGH);
 
         now = time(0);
         timeinfo = *localtime(&now);
 
-        current_time, night_end, deep_sleep_sec;
         current_time = timeinfo.tm_hour * 100 + timeinfo.tm_min;
         night_end = settings.night_end_h * 100 + settings.night_end_m;
 
@@ -307,7 +311,6 @@ void set_text(int disp_mode, char *disp_text)
         esp_deep_sleep(deep_sleep_sec * 1e6);
 
         break;
-    }
 
     case 2: // date
         digitalWrite(VFBLANK, LOW);
@@ -401,7 +404,7 @@ void set_text(int disp_mode, char *disp_text)
         break;
 
     case 3: // IP
-    {
+
         digitalWrite(VFBLANK, LOW);
         if (!server_active)
         {
@@ -409,7 +412,6 @@ void set_text(int disp_mode, char *disp_text)
         }
         sprintf(disp_text, "%9d", WiFi.localIP()[3]);
         break;
-    }
 
     case 4: // NTP syncing
         digitalWrite(VFBLANK, LOW);
@@ -442,7 +444,7 @@ void set_text(int disp_mode, char *disp_text)
     }
 }
 
-void dot_scroll(int *dots)
+void dot_scroll(int *dots) // TODO: Use reference? (same for others)
 {
     /* Generate array for scrolling dots
    */
@@ -456,13 +458,11 @@ void set_dots(int disp_mode, int *dots)
 {
     /* Set decimal point display based on display mode and settings.
    */
-
+    char am_pm[3]{};
     switch (disp_mode)
     {
         time_t now;
         struct tm timeinfo;
-
-        char am_pm[3];
 
     case 0: // Time
         if (settings.t_format == 0)
@@ -509,7 +509,7 @@ int get_spi_data(int current_digit, char *disp_text, int *dots)
    */
 
     unsigned char chr{disp_text[current_digit]};
-    int spi_data;
+    int spi_data{};
 
     if (chr <= (unsigned char)' ') // If character is space, show dot or nothing at all
     {

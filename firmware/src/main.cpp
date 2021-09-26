@@ -16,45 +16,34 @@ bool server_active{false};
 
 // PWM and photoresistor
 constexpr int LDR_PIN{36};
-constexpr int LED_PIN{0}; // FIXME: Delete later
 constexpr int PWM_CHANNEL{0};
 
 // Touch
-constexpr int TOUCH_THRESHOLD{150};
+constexpr int TOUCH_THRESHOLD{250};
 
 // SPI interface
 constexpr int VFLOAD{5};
 constexpr int VFBLANK{21};
 
 // Font Table
-int font_table[46];
-int digit_table[9];
-int dot;
+int font_table[46]{};
+int digit_table[9]{};
+int dot{};
 
 DNSServer dns_server;
 AsyncWebServer server(80);
 CallistoSettings settings;
-String ssid_options = "";
+String ssid_options;
 
 void setup()
 {
   Serial.begin(115200);
-  pinMode(LED_PIN, OUTPUT);   // FIXME: Delete later
-  digitalWrite(LED_PIN, LOW); // FIXME: Delete later
-
-  // TODO: Some sort of energy saving mode
-  esp_pm_config_esp32_t pm_config;
-  pm_config.max_freq_mhz = 160;
-  pm_config.min_freq_mhz = 80;
-  pm_config.light_sleep_enable = true;
-  esp_pm_configure(&pm_config);
 
   init_brightness();
   init_touch();
   init_spi();
   init_spiffs();
   init_font_table();
-
   settings.init();
 
   if (settings.ssid.compareTo("") != 0)
@@ -64,6 +53,12 @@ void setup()
 
   if (credentials_saved)
   {
+    esp_pm_config_esp32_t pm_config;
+    pm_config.max_freq_mhz = 160;
+    pm_config.min_freq_mhz = 80;
+    pm_config.light_sleep_enable = true;
+    esp_pm_configure(&pm_config);
+
     init_wifi();
   }
 
@@ -76,8 +71,8 @@ void setup()
 void loop()
 {
   static int current_digit{0};
-  static char disp_text[10];
-  int dots[9] = {0, 0, 0, 0, 0, 0, 0, 0, 0};
+  static char disp_text[10]{};
+  int dots[9]{};
 
   static int min_brightness{2500};
   static int max_brightness{2501};

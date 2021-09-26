@@ -45,8 +45,6 @@ public:
     }
 };
 
-
-
 String processor(const String &var)
 {
     /* Processor replaces placeholder string within the webpage, based on user
@@ -132,7 +130,7 @@ String processor(const String &var)
         }
         else if (var.indexOf("night_") >= 0)
         {
-            char out[2];
+            char out[2]{};
             if (var == "night_start_h")
             {
                 sprintf(out, "%02d", settings.night_start_h);
