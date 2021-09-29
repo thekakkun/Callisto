@@ -74,7 +74,7 @@ U 1 1 610DA2CA
 P 2800 1200
 F 0 "U2" H 2800 1442 50  0000 C CNN
 F 1 "L7805" H 2800 1350 50  0000 C CNN
-F 2 "Package_TO_SOT_THT:TO-220-3_Vertical" H 2825 1050 50  0001 L CIN
+F 2 "callisto:L7805_with_heatsink" H 2825 1050 50  0001 L CIN
 F 3 "http://www.st.com/content/ccc/resource/technical/document/datasheet/41/4f/b3/b0/12/d4/47/88/CD00000444.pdf/files/CD00000444.pdf/jcr:content/translations/en.CD00000444.pdf" H 2800 1150 50  0001 C CNN
 	1    2800 1200
 	1    0    0    -1  
@@ -541,7 +541,7 @@ U 1 1 6121F2BF
 P 7450 4750
 F 0 "J2" H 7450 5900 50  0000 C CNN
 F 1 "Conn_01x20" H 7450 5800 50  0000 C CNN
-F 2 "Connector_PinSocket_2.54mm:PinSocket_2x10_P2.54mm_Vertical" H 7450 4750 50  0001 C CNN
+F 2 "Connector_IDC:IDC-Header_2x10_P2.54mm_Vertical" H 7450 4750 50  0001 C CNN
 F 3 "~" H 7450 4750 50  0001 C CNN
 	1    7450 4750
 	1    0    0    -1  
@@ -599,12 +599,12 @@ $EndComp
 $Comp
 L power:VCC #PWR020
 U 1 1 6117890B
-P 6850 3400
-F 0 "#PWR020" H 6850 3250 50  0001 C CNN
-F 1 "VCC" H 6865 3573 50  0000 C CNN
-F 2 "" H 6850 3400 50  0001 C CNN
-F 3 "" H 6850 3400 50  0001 C CNN
-	1    6850 3400
+P 6850 3350
+F 0 "#PWR020" H 6850 3200 50  0001 C CNN
+F 1 "VCC" H 6865 3523 50  0000 C CNN
+F 2 "" H 6850 3350 50  0001 C CNN
+F 3 "" H 6850 3350 50  0001 C CNN
+	1    6850 3350
 	1    0    0    -1  
 $EndComp
 Wire Wire Line
@@ -627,12 +627,12 @@ Light sensor
 $Comp
 L Device:R R3
 U 1 1 610C9DA0
-P 6850 3650
-F 0 "R3" H 6750 3600 50  0000 C CNN
-F 1 "22" H 6750 3700 50  0000 C CNN
-F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" V 6780 3650 50  0001 C CNN
-F 3 "~" H 6850 3650 50  0001 C CNN
-	1    6850 3650
+P 6850 3600
+F 0 "R3" H 6750 3550 50  0000 C CNN
+F 1 "22" H 6750 3650 50  0000 C CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" V 6780 3600 50  0001 C CNN
+F 3 "~" H 6850 3600 50  0001 C CNN
+	1    6850 3600
 	-1   0    0    1   
 $EndComp
 $Comp
@@ -908,10 +908,6 @@ Entry Wire Line
 Wire Bus Line
 	4650 3200 3950 3200
 Wire Wire Line
-	6850 5650 6850 6150
-Wire Wire Line
-	6850 5650 7250 5650
-Wire Wire Line
 	1200 1400 1200 1850
 Wire Wire Line
 	4950 1100 4950 1250
@@ -990,17 +986,6 @@ F 3 "~" H 9000 5100 50  0001 C CNN
 	1    9000 5100
 	-1   0    0    1   
 $EndComp
-$Comp
-L callisto_lib:MAX6921AUI+ U3
-U 1 1 61130460
-P 5750 4800
-F 0 "U3" H 5200 5850 50  0000 C CNN
-F 1 "MAX6921AUI+" H 5200 5950 50  0000 C CNN
-F 2 "Package_SO:TSSOP-28_4.4x9.7mm_P0.65mm" H 5750 4800 50  0001 C CNN
-F 3 "" H 5750 4800 50  0001 C CNN
-	1    5750 4800
-	1    0    0    -1  
-$EndComp
 Text Label 1600 6900 0    50   ~ 0
 BRIGHTNESS
 Wire Wire Line
@@ -1017,11 +1002,11 @@ TOUCH
 Wire Wire Line
 	3550 4150 4000 4150
 Wire Wire Line
-	6850 3400 6850 3500
+	6850 3350 6850 3450
 Wire Wire Line
-	6850 3850 7250 3850
+	6850 3950 7250 3950
 Wire Wire Line
-	6850 3800 6850 3850
+	6850 3750 6850 3950
 Wire Wire Line
 	1100 5150 1650 5150
 Wire Wire Line
@@ -1046,8 +1031,6 @@ $EndComp
 NoConn ~ 3550 4550
 Text Label 6450 3950 0    50   ~ 0
 O_1
-Text Label 7250 4250 2    50   ~ 0
-O_1
 Text Label 6450 4050 0    50   ~ 0
 O_2
 Text Label 6450 4150 0    50   ~ 0
@@ -1056,113 +1039,66 @@ Text Label 6450 4250 0    50   ~ 0
 O_4
 Text Label 6450 4350 0    50   ~ 0
 O_5
-Text Label 7250 4450 2    50   ~ 0
-O_2
-Text Label 7250 4650 2    50   ~ 0
-O_3
-Text Label 7250 4850 2    50   ~ 0
-O_4
-Text Label 7250 5050 2    50   ~ 0
-O_5
 Text Label 6450 3850 0    50   ~ 0
-O_0
-Text Label 7250 4050 2    50   ~ 0
 O_0
 Text Label 6450 4450 0    50   ~ 0
 O_6
 Text Label 6450 4550 0    50   ~ 0
 O_7
-Text Label 6450 4650 0    50   ~ 0
-O_8
 Text Label 6450 5750 0    50   ~ 0
 O_19
-Text Label 7250 5250 2    50   ~ 0
-O_6
-Text Label 7600 6200 2    50   ~ 0
-O_8
 Text Label 6450 5650 0    50   ~ 0
 O_18
 Text Label 6450 5550 0    50   ~ 0
 O_17
 Text Label 6450 5450 0    50   ~ 0
 O_16
-Text Label 7250 4750 2    50   ~ 0
-O_19
-Text Label 7250 4550 2    50   ~ 0
-O_18
-Text Label 7250 4350 2    50   ~ 0
-O_17
-Text Label 7250 4150 2    50   ~ 0
-O_16
 Text Label 6450 5150 0    50   ~ 0
 O_13
 Text Label 6450 5050 0    50   ~ 0
 O_12
-Text Label 6450 4850 0    50   ~ 0
-O_10
-Text Label 6450 4950 0    50   ~ 0
-O_11
-Text Label 7250 4950 2    50   ~ 0
-O_10
-Text Label 7250 5150 2    50   ~ 0
-O_11
-Text Label 7250 5350 2    50   ~ 0
-O_12
 NoConn ~ 6450 4750
-NoConn ~ 6450 5250
-NoConn ~ 6450 5350
-$Comp
-L power:GND #PWR021
-U 1 1 6117ABA5
-P 6850 6150
-F 0 "#PWR021" H 6850 5900 50  0001 C CNN
-F 1 "GND" H 6855 5977 50  0000 C CNN
-F 2 "" H 6850 6150 50  0001 C CNN
-F 3 "" H 6850 6150 50  0001 C CNN
-	1    6850 6150
-	1    0    0    -1  
-$EndComp
 Wire Wire Line
 	8000 5750 8350 5750
 Entry Wire Line
 	8350 5750 8450 5650
-Text Label 8050 3850 0    50   ~ 0
+Text Label 8050 3950 0    50   ~ 0
 fil_v
-Text Label 8050 4150 0    50   ~ 0
-dig_9
-Text Label 8050 4350 0    50   ~ 0
-dig_1
-Text Label 8050 4550 0    50   ~ 0
-dig_3
-Text Label 8050 4750 0    50   ~ 0
-dig_5
-Text Label 8050 4950 0    50   ~ 0
-dig_8
-Text Label 8050 5150 0    50   ~ 0
-dig_7
-Text Label 8050 5350 0    50   ~ 0
-dig_6
-Text Label 8050 5550 0    50   ~ 0
-dig_4
-Text Label 8050 5750 0    50   ~ 0
-dig_2
-Text Label 8050 5650 0    50   ~ 0
-fil_g
-Text Label 8050 4850 0    50   ~ 0
-seg_h
-Text Label 8050 5050 0    50   ~ 0
-seg_d
-Text Label 8050 5250 0    50   ~ 0
-seg_c
-Text Label 8050 5450 0    50   ~ 0
-seg_e
-Text Label 8050 4650 0    50   ~ 0
-seg_a
-Text Label 8050 4450 0    50   ~ 0
-seg_f
-Text Label 8050 4250 0    50   ~ 0
-seg_b
 Text Label 8050 4050 0    50   ~ 0
+dig_9
+Text Label 8050 4250 0    50   ~ 0
+dig_1
+Text Label 8050 4450 0    50   ~ 0
+dig_3
+Text Label 8050 4650 0    50   ~ 0
+dig_5
+Text Label 8050 4850 0    50   ~ 0
+dig_8
+Text Label 8050 5050 0    50   ~ 0
+dig_7
+Text Label 8050 5250 0    50   ~ 0
+dig_6
+Text Label 8050 5450 0    50   ~ 0
+dig_4
+Text Label 8050 5650 0    50   ~ 0
+dig_2
+Text Label 8050 5750 0    50   ~ 0
+fil_g
+Text Label 8050 4950 0    50   ~ 0
+seg_h
+Text Label 8050 5150 0    50   ~ 0
+seg_d
+Text Label 8050 5350 0    50   ~ 0
+seg_c
+Text Label 8050 5550 0    50   ~ 0
+seg_e
+Text Label 8050 4750 0    50   ~ 0
+seg_a
+Text Label 8050 4550 0    50   ~ 0
+seg_f
+Text Label 8050 4350 0    50   ~ 0
+seg_b
+Text Label 8050 4150 0    50   ~ 0
 seg_g
 $Comp
 L Device:CP C8
@@ -1209,7 +1145,7 @@ $EndComp
 Connection ~ 10800 5600
 Wire Wire Line
 	10800 5600 10900 5600
-Text Label 8050 3950 0    50   ~ 0
+Text Label 8050 3850 0    50   ~ 0
 fil_g
 Wire Wire Line
 	8000 3950 8350 3950
@@ -1220,46 +1156,106 @@ Wire Wire Line
 Text Label 3550 3800 0    50   ~ 0
 DIN
 NoConn ~ 3550 3700
-Wire Wire Line
-	6850 3950 6850 4450
-Wire Wire Line
-	6850 3950 7250 3950
 $Comp
 L power:GND #PWR0101
 U 1 1 615408DC
-P 6850 4450
-F 0 "#PWR0101" H 6850 4200 50  0001 C CNN
-F 1 "GND" H 6855 4277 50  0000 C CNN
-F 2 "" H 6850 4450 50  0001 C CNN
-F 3 "" H 6850 4450 50  0001 C CNN
-	1    6850 4450
-	1    0    0    -1  
+P 7250 3850
+F 0 "#PWR0101" H 7250 3600 50  0001 C CNN
+F 1 "GND" H 7255 3677 50  0000 C CNN
+F 2 "" H 7250 3850 50  0001 C CNN
+F 3 "" H 7250 3850 50  0001 C CNN
+	1    7250 3850
+	0    1    1    0   
 $EndComp
-Text Label 7250 5750 2    50   ~ 0
-O_8
-Text Label 7250 5450 2    50   ~ 0
-O_7
-Text Label 7250 5550 2    50   ~ 0
-O_13
-Wire Bus Line
-	4650 3200 4650 4900
-Wire Bus Line
-	3950 3200 3950 3800
-Wire Bus Line
-	8450 3500 8450 5650
-Wire Bus Line
-	8900 3500 8900 5000
-Wire Bus Line
-	11000 3500 11000 5500
 $Comp
 L Connector_Generic:Conn_01x20 J3
 U 1 1 61196BBA
 P 7800 4750
 F 0 "J3" H 7718 3525 50  0000 C CNN
 F 1 "Conn_01x20" H 7718 3616 50  0000 C CNN
-F 2 "Connector_PinSocket_2.54mm:PinSocket_2x10_P2.54mm_Vertical" H 7800 4750 50  0001 C CNN
+F 2 "Connector_IDC:IDC-Header_2x10_P2.54mm_Vertical" H 7800 4750 50  0001 C CNN
 F 3 "~" H 7800 4750 50  0001 C CNN
 	1    7800 4750
 	-1   0    0    -1  
 $EndComp
+Wire Wire Line
+	6850 5750 7250 5750
+Wire Wire Line
+	6850 5750 6850 6150
+Text Label 7250 5250 2    50   ~ 0
+O_13
+Text Label 7250 5450 2    50   ~ 0
+O_12
+Text Label 7250 4850 2    50   ~ 0
+O_15
+Text Label 7250 5350 2    50   ~ 0
+O_6
+Text Label 7250 5050 2    50   ~ 0
+O_14
+Text Label 7250 5150 2    50   ~ 0
+O_5
+Text Label 7250 4650 2    50   ~ 0
+O_16
+Text Label 7250 4450 2    50   ~ 0
+O_17
+Text Label 7250 4250 2    50   ~ 0
+O_18
+Text Label 7250 4050 2    50   ~ 0
+O_19
+Text Label 7250 4150 2    50   ~ 0
+O_0
+Text Label 7250 4950 2    50   ~ 0
+O_4
+Text Label 7250 4750 2    50   ~ 0
+O_3
+Text Label 7250 4550 2    50   ~ 0
+O_2
+Text Label 7250 4350 2    50   ~ 0
+O_1
+Text Label 7250 5650 2    50   ~ 0
+O_11
+Text Label 7250 5550 2    50   ~ 0
+O_7
+$Comp
+L power:GND #PWR021
+U 1 1 6117ABA5
+P 6850 6150
+F 0 "#PWR021" H 6850 5900 50  0001 C CNN
+F 1 "GND" H 6855 5977 50  0000 C CNN
+F 2 "" H 6850 6150 50  0001 C CNN
+F 3 "" H 6850 6150 50  0001 C CNN
+	1    6850 6150
+	1    0    0    -1  
+$EndComp
+$Comp
+L callisto_lib:MAX6921AWI+ U3
+U 1 1 61130460
+P 5750 4800
+F 0 "U3" H 5200 5850 50  0000 C CNN
+F 1 "MAX6921AWI+" H 5200 5950 50  0000 C CNN
+F 2 "Package_SO:SOIC-28W_7.5x17.9mm_P1.27mm" H 5750 4800 50  0001 C CNN
+F 3 "" H 5750 4800 50  0001 C CNN
+	1    5750 4800
+	1    0    0    -1  
+$EndComp
+Text Label 6450 5250 0    50   ~ 0
+O_14
+Text Label 6450 5350 0    50   ~ 0
+O_15
+Text Label 6450 4950 0    50   ~ 0
+O_11
+NoConn ~ 6450 4850
+NoConn ~ 6450 4650
+Text Label 5050 4900 2    50   ~ 0
+DOUT
+Wire Bus Line
+	4650 3200 4650 4900
+Wire Bus Line
+	3950 3200 3950 3800
+Wire Bus Line
+	8900 3500 8900 5000
+Wire Bus Line
+	11000 3500 11000 5500
+Wire Bus Line
+	8450 3500 8450 5650
 $EndSCHEMATC

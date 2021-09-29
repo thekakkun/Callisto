@@ -221,7 +221,7 @@ void init_font_table()
         // 19, // Digit 5
         // 13, // Digit 4
         // 18, // Digit 3
-        // 8, // Digit 2
+        // 8 , // Digit 2
         // 17,  // Digit 1
         // Breadboard pins
         // 9, // Digit 9

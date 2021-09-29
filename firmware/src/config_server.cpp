@@ -275,6 +275,7 @@ void init_server()
     /* Initialize the settings webpage server
    */
 
+    // TODO: This is a lambda function. Try to understand it and make everything else better.
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/index.html", String(), false, processor); });
     server.on("/get", HTTP_POST, on_get);
