@@ -11,6 +11,7 @@
 class CallistoSettings
 {
 public:
+// TODO: Set defalut parameters here
     Preferences preferences;
     String ssid, password;
     int t_format, t_pad, t_divider;

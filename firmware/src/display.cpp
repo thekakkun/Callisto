@@ -9,31 +9,25 @@ void adjust_brightness(int min_brightness, int max_brightness)
    * converter outputs for whatever reason...
    */
 
-    // TODO: Use PWM blanking instead of boost converter voltage?
-    constexpr int V_IN{9}, MIN_V{15}, MAX_V{40}, V_LIM{55};
-    const int V_RANGE{MAX_V - MIN_V};
-    constexpr float ETA{0.8};
-    float lo_brightness_v{}, hi_brightness_v{}, brightness_v_range{};
-    float ambient_brightness_p{}, v_out{};
-    int duty{};
+    // Gives max tube voltage of 48-ish volts. Increase value for higher voltage at risk of decreased tube life.
+    constexpr int BOOST_DUTY{160};
+    constexpr int PWM_LIM_HI{0}, PWM_LIM_LO{240}; // Absolute limits for PWM.
+    const int PWM_LIM_RANGE{PWM_LIM_LO - PWM_LIM_HI};
+    float pwm_hi, pwm_lo;
+    float ambient_brightness_p{};
+    int blank_pwm;
 
-    // max and min output voltage, based on user set preferences
-    lo_brightness_v =
-        MIN_V + (V_RANGE * static_cast<float>(settings.lo_brightness - 1) / 9);
-    hi_brightness_v =
-        MIN_V + (V_RANGE * static_cast<float>(settings.hi_brightness - 1) / 9);
-    brightness_v_range = hi_brightness_v - lo_brightness_v;
+    // PWM limit based on user-set brightness range.
+    pwm_hi = PWM_LIM_HI + (PWM_LIM_RANGE * static_cast<float>(settings.lo_brightness - 1) / 9);
+    pwm_lo = PWM_LIM_HI + (PWM_LIM_RANGE * static_cast<float>(settings.hi_brightness - 1) / 9);
 
     int brightness{analogRead(LDR_PIN)};
     ambient_brightness_p =
         static_cast<float>(brightness - min_brightness) / (max_brightness - min_brightness);
-    v_out = lo_brightness_v + ambient_brightness_p * brightness_v_range;
-    duty = int(255 * (V_IN * ETA / (V_LIM - v_out)));
+    blank_pwm = static_cast<int>(pwm_hi + (1 - ambient_brightness_p) * (pwm_lo - pwm_hi));
 
-    // TODO: For testing. Delete later.
-    duty = 172;
-
-    ledcWrite(PWM_CHANNEL, duty);
+    ledcWrite(BOOST_CHANNEL, BOOST_DUTY);
+    ledcWrite(BLANK_CHANNEL, blank_pwm);
 }
 
 void set_touch_state(bool &touch_state, bool &previous_touch_state,
@@ -46,7 +40,6 @@ void set_touch_state(bool &touch_state, bool &previous_touch_state,
     unsigned long now_ms{millis()};
 
     touch_pad_read_filtered(TOUCH_PAD_NUM3, &touch_value);
-    // Serial.println(touch_value);
 
     if (touch_value < TOUCH_THRESHOLD)
     {
@@ -179,7 +172,7 @@ int get_mode()
         }
         else if (is_night())
         {
-            if (now_ms - touch_end < SHOW_FOR + 5000)
+            if (now_ms - touch_start < SHOW_FOR + 5000)
             {
                 // touched at night -> show time for longer
                 // (to accomodate for waking from deep sleep)
@@ -192,7 +185,7 @@ int get_mode()
         }
         else
         {
-            if (now_ms - touch_end < SHOW_FOR)
+            if (now_ms - touch_start < SHOW_FOR)
             {
                 return 2; // touched during day -> show date
             }

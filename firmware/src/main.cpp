@@ -16,13 +16,14 @@ bool server_active{false};
 
 // PWM and photoresistor
 constexpr int LDR_PIN{36};
-constexpr int PWM_CHANNEL{0};
+constexpr int BOOST_CHANNEL{0};
 
 // Touch
-constexpr int TOUCH_THRESHOLD{250};
+constexpr int TOUCH_THRESHOLD{400};
 
 // SPI interface
 constexpr int VFLOAD{5};
+constexpr int BLANK_CHANNEL{2};
 constexpr int VFBLANK{21};
 
 // Font Table

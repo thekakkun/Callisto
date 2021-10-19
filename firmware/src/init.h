@@ -7,7 +7,7 @@
 #include <WiFi.h>
 #include <esp_sntp.h>
 
-extern const int PWM_CHANNEL;
+extern const int BOOST_CHANNEL;
 void init_brightness();
 
 extern const int TOUCH_THRESHOLD;
@@ -16,6 +16,7 @@ void init_touch();
 
 extern const int VFLOAD;
 extern const int VFBLANK;
+extern const int BLANK_CHANNEL;
 void init_spi();
 
 void init_spiffs();

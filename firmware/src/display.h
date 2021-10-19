@@ -5,10 +5,10 @@
 #include <SPI.h>
 
 extern const int LDR_PIN;
-extern const int PWM_CHANNEL;
+extern const int BOOST_CHANNEL;
+extern const int BLANK_CHANNEL;
 void adjust_brightness(int min_brightness, int max_brightness);
 void brightness_utilities(int *min_brightness, int *max_brightness);
-extern const int LED_PIN; // TODO: Delete later
 extern const int TOUCH_THRESHOLD;
 void set_touch_state(bool &touch_state, bool &previous_touch_state,
                      unsigned long &touch_start, unsigned long &touch_end);

@@ -1,7 +1,7 @@
 #include "init.h"
 #include "config_server.h"
 
-void CallistoSettings::init()
+void CallistoSettings::init() // TODO: This should be a constructor
 {
     preferences.begin("config");
 
