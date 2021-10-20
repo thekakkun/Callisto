@@ -19,12 +19,24 @@ extern bool credentials_saved;
 extern bool server_active;
 extern bool time_synced;
 extern const int VFBLANK;
+
+enum Mode
+{
+    current_time,
+    in_sleep,
+    current_date,
+    ip_address,
+    ntp_syncing,
+    wifi_error,
+    connect_ap
+};
+
 bool is_night();
-int get_mode();
-void set_text(int disp_mode, char *disp_text);
+Mode get_mode();
+void set_text(Mode disp_mode, char *disp_text);
 
 void dot_scroll(int *dots);
-void set_dots(int disp_mode, int *dots);
+void set_dots(Mode disp_mode, int *dots);
 
 extern int dot;
 extern int font_table[46];

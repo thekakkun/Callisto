@@ -1,4 +1,6 @@
 #include "config_server.h"
+#include <esp_pm.h>
+#include <esp_sleep.h>
 #include "init.h"
 
 void init_brightness()
@@ -94,8 +96,6 @@ void init_wifi()
 
     if (WiFi.status() == WL_CONNECTED)
     {
-        // TODO: Wifi sleep
-        WiFi.setSleep(true);
         wifi_connected = true;
         Serial.println(" CONNECTED!");
         Serial.print("Local Address: ");
@@ -203,6 +203,16 @@ void init_font_table()
         bitSet(digit_table[i], GRID_OUT[i]);
     }
 };
+
+void init_power_save()
+{
+    WiFi.setSleep(true);
+    esp_pm_config_esp32_t pm_config;
+    pm_config.max_freq_mhz = 80;
+    pm_config.min_freq_mhz = 40;
+    pm_config.light_sleep_enable = true;
+    esp_pm_configure(&pm_config);
+}
 
 void init_sntp()
 {

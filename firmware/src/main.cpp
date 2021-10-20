@@ -1,7 +1,6 @@
 #include <Arduino.h>
 #include <esp32-hal-touch.h>
-#include <esp_pm.h>
-#include <esp_sleep.h>
+
 
 #include "init.h"
 #include "config_server.h"
@@ -54,17 +53,12 @@ void setup()
 
   if (credentials_saved)
   {
-    esp_pm_config_esp32_t pm_config;
-    pm_config.max_freq_mhz = 160;
-    pm_config.min_freq_mhz = 80;
-    pm_config.light_sleep_enable = true;
-    esp_pm_configure(&pm_config);
-
     init_wifi();
   }
 
   if (wifi_connected)
   {
+    init_power_save();
     init_sntp();
   }
 }
@@ -83,7 +77,7 @@ void loop()
   adjust_brightness(min_brightness, max_brightness);
 
   // Set display text and dots based on mode
-  int disp_mode{get_mode()};
+  Mode disp_mode{get_mode()};
   set_text(disp_mode, disp_text);
   set_dots(disp_mode, dots);
 

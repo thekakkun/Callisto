@@ -1,15 +1,14 @@
 #include "init.h"
 #include "config_server.h"
 
-void CallistoSettings::init() // TODO: This should be a constructor
+void CallistoSettings::init()
 {
     preferences.begin("config");
 
     ssid = preferences.getString("ssid", "");
     password = preferences.getString("password", "");
 
-    t_format = preferences.getInt(
-        "t_format", 0);                             // [0]: 12 with dot, [1]: 12 without dot, [2]: 24
+    t_format = preferences.getInt("t_format", 0);   // [0]: 12 with dot, [1]: 12 without dot, [2]: 24
     t_pad = preferences.getInt("t_pad", 0);         // [0]: no pad, [1]: zero pad
     t_divider = preferences.getInt("t_divider", 0); // [0]: space, [1]: hyphen
 
@@ -229,9 +228,7 @@ void on_factory_reset(AsyncWebServerRequest *request)
     delay(100);
 
     settings.preferences.clear();
-
     server.end();
-
     ESP.restart();
 }
 

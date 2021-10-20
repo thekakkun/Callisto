@@ -71,17 +71,17 @@ bool is_night()
     time_t now{time(0)};
     struct tm timeinfo = *localtime(&now);
 
-    int current_time{};
-    static int night_start{}, night_end{};
+    int current_time_digital{};
+    static int night_start_digital{}, night_end_digital{};
 
-    current_time = timeinfo.tm_hour * 100 + timeinfo.tm_min;
-    night_start =
+    current_time_digital = timeinfo.tm_hour * 100 + timeinfo.tm_min;
+    night_start_digital =
         settings.night_start_h * 100 + settings.night_start_m;
-    night_end = settings.night_end_h * 100 + settings.night_end_m;
+    night_end_digital = settings.night_end_h * 100 + settings.night_end_m;
 
-    if (night_start < night_end)
+    if (night_start_digital < night_end_digital)
     {
-        if (night_start <= current_time && current_time < night_end)
+        if (night_start_digital <= current_time_digital && current_time_digital < night_end_digital)
         {
             return true;
         }
@@ -92,7 +92,7 @@ bool is_night()
     }
     else
     {
-        if (night_start <= current_time || current_time < night_end)
+        if (night_start_digital <= current_time_digital || current_time_digital < night_end_digital)
         {
             return true;
         }
@@ -103,17 +103,9 @@ bool is_night()
     }
 }
 
-int get_mode()
+Mode get_mode()
 {
     /* Get display mode based on success flags, current time, and touch reading
-    TODO: Use enum type to make it easier to parse
-   * 0: Time (everything okay)
-   * 1: Sleep (at night)
-   * 2: Date (touch detected)
-   * 3: IP address (server is active)
-   * 4: NTP syncing (wifi connected, getting time)
-   * 5: Wifi error (wifi config exists, but timed out)
-   * 6: AP active (AP is active)
    */
 
     constexpr unsigned int SHOW_FOR{5 * 1000};
@@ -130,11 +122,11 @@ int get_mode()
     {
         if (credentials_saved)
         {
-            return 5; // credentials saved, but timed out -> wifi error
+            return wifi_error; // credentials saved, but timed out -> wifi error
         }
         else
         {
-            return 6; // no credentials -> connect to ap
+            return connect_ap; // no credentials -> connect to ap
         }
     }
     else if (server_active)
@@ -142,11 +134,11 @@ int get_mode()
         now_ms = millis();
         if (now_ms - server_start_time < SERVER_TIMEOUT)
         {
-            return 3; // server active, not timed out -> show IP
+            return ip_address; // server active, not timed out -> show IP
         }
         else
         {
-            return 0; // server timed out -> show time
+            return current_time; // server timed out -> show time
         }
     }
     else
@@ -160,7 +152,7 @@ int get_mode()
         if (touch_state && now_ms - touch_start > SERVER_START)
         {
             server_start_time = millis();
-            return 3; // held for long time -> start server
+            return ip_address; // held for long time -> start server
         }
         else if (!time_synced)
         {
@@ -168,7 +160,7 @@ int get_mode()
             {
                 time_synced = true;
             }
-            return 4; // time syncing -> show boot
+            return ntp_syncing; // time syncing -> show boot
         }
         else if (is_night())
         {
@@ -176,28 +168,28 @@ int get_mode()
             {
                 // touched at night -> show time for longer
                 // (to accomodate for waking from deep sleep)
-                return 0;
+                return current_time;
             }
             else
             {
-                return 1; // night -> clock off
+                return in_sleep; // night -> clock off
             }
         }
         else
         {
             if (now_ms - touch_start < SHOW_FOR)
             {
-                return 2; // touched during day -> show date
+                return current_date; // touched during day -> show date
             }
             else
             {
-                return 0; // day -> show time
+                return current_time; // day -> show time
             }
         }
     }
 }
 
-void set_text(int disp_mode, char *disp_text)
+void set_text(Mode disp_mode, char *disp_text)
 {
     /* Set display data based on display mode
    */
@@ -206,9 +198,9 @@ void set_text(int disp_mode, char *disp_text)
     {
         time_t now;
         struct tm timeinfo;
-        int current_time, night_end, deep_sleep_sec;
+        int time_digital, night_end_digital, deep_sleep_sec;
 
-    case 0: // Time
+    case current_time:
         ledcWrite(BLANK_CHANNEL, 0);
         touch_pad_set_fsm_mode(TOUCH_FSM_MODE_DEFAULT);
         esp_sleep_enable_touchpad_wakeup();
@@ -274,17 +266,16 @@ void set_text(int disp_mode, char *disp_text)
         }
         break;
 
-    case 1:
-        // off
+    case in_sleep:
         ledcWrite(BLANK_CHANNEL, 255);
 
         now = time(0);
         timeinfo = *localtime(&now);
 
-        current_time = timeinfo.tm_hour * 100 + timeinfo.tm_min;
-        night_end = settings.night_end_h * 100 + settings.night_end_m;
+        time_digital = timeinfo.tm_hour * 100 + timeinfo.tm_min;
+        night_end_digital = settings.night_end_h * 100 + settings.night_end_m;
 
-        if (current_time < night_end)
+        if (time_digital < night_end_digital)
         {
             deep_sleep_sec = (settings.night_end_h - timeinfo.tm_hour) * 60 * 60 +
                              (settings.night_end_m - timeinfo.tm_min) * 60 +
@@ -305,7 +296,7 @@ void set_text(int disp_mode, char *disp_text)
 
         break;
 
-    case 2: // date
+    case current_date:
         ledcWrite(BLANK_CHANNEL, 0);
 
         now = time(0);
@@ -396,7 +387,7 @@ void set_text(int disp_mode, char *disp_text)
 
         break;
 
-    case 3: // IP
+    case ip_address:
         ledcWrite(BLANK_CHANNEL, 0);
         if (!server_active)
         {
@@ -405,12 +396,12 @@ void set_text(int disp_mode, char *disp_text)
         sprintf(disp_text, "%9d", WiFi.localIP()[3]);
         break;
 
-    case 4: // NTP syncing
+    case ntp_syncing:
         ledcWrite(BLANK_CHANNEL, 0);
         sprintf(disp_text, " %-8s", "Callisto");
         break;
 
-    case 5: // Wifi error
+    case wifi_error:
         ledcWrite(BLANK_CHANNEL, 0);
         sprintf(disp_text, " %-8s", "net err");
 
@@ -422,7 +413,7 @@ void set_text(int disp_mode, char *disp_text)
         dns_server.processNextRequest();
         break;
 
-    case 6: // AP active
+    case connect_ap:
         ledcWrite(BLANK_CHANNEL, 0);
         sprintf(disp_text, " %-8s", "connect");
 
@@ -436,7 +427,7 @@ void set_text(int disp_mode, char *disp_text)
     }
 }
 
-void dot_scroll(int *dots) // TODO: Use reference? (same for others)
+void dot_scroll(int *dots)
 {
     /* Generate array for scrolling dots
    */
@@ -446,7 +437,7 @@ void dot_scroll(int *dots) // TODO: Use reference? (same for others)
     dots[(now_ms / 500) % 8 + 1] = 1;
 }
 
-void set_dots(int disp_mode, int *dots)
+void set_dots(Mode disp_mode, int *dots)
 {
     /* Set decimal point display based on display mode and settings.
    */
@@ -456,7 +447,7 @@ void set_dots(int disp_mode, int *dots)
         time_t now;
         struct tm timeinfo;
 
-    case 0: // Time
+    case current_time:
         if (settings.t_format == 0)
         {
             now = time(0);
@@ -470,10 +461,10 @@ void set_dots(int disp_mode, int *dots)
         }
         break;
 
-    case 1: // off
+    case in_sleep:
         break;
 
-    case 2: // date
+    case current_date:
         if (settings.d_divider == 0)
         {
             dots[2] = 1;
@@ -481,15 +472,18 @@ void set_dots(int disp_mode, int *dots)
         }
         break;
 
-    case 3: // IP
+    case ip_address:
         dots[5] = 0;
         break;
 
-    case 4: // ntp
+    case ntp_syncing:
         dot_scroll(dots);
         break;
 
-    case 5: // no wifi
+    case wifi_error:
+        break;
+
+    case connect_ap:
         break;
     }
 }
@@ -503,7 +497,8 @@ int get_spi_data(int current_digit, char *disp_text, int *dots)
     unsigned char chr{disp_text[current_digit]};
     int spi_data{};
 
-    if (chr <= (unsigned char)' ') // If character is space, show dot or nothing at all
+    // If character is space, show dot or nothing at all
+    if (chr <= (unsigned char)' ')
     {
         spi_data = dots[current_digit] * (dot + digit_table[current_digit]);
         return spi_data;
