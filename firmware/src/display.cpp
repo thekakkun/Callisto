@@ -209,7 +209,7 @@ void set_text(int disp_mode, char *disp_text)
         int current_time, night_end, deep_sleep_sec;
 
     case 0: // Time
-        digitalWrite(VFBLANK, LOW);
+        ledcWrite(BLANK_CHANNEL, 0);
         touch_pad_set_fsm_mode(TOUCH_FSM_MODE_DEFAULT);
         esp_sleep_enable_touchpad_wakeup();
 
@@ -276,7 +276,7 @@ void set_text(int disp_mode, char *disp_text)
 
     case 1:
         // off
-        digitalWrite(VFBLANK, HIGH);
+        ledcWrite(BLANK_CHANNEL, 255);
 
         now = time(0);
         timeinfo = *localtime(&now);
@@ -306,7 +306,7 @@ void set_text(int disp_mode, char *disp_text)
         break;
 
     case 2: // date
-        digitalWrite(VFBLANK, LOW);
+        ledcWrite(BLANK_CHANNEL, 0);
 
         now = time(0);
         timeinfo = *localtime(&now);
@@ -397,8 +397,7 @@ void set_text(int disp_mode, char *disp_text)
         break;
 
     case 3: // IP
-
-        digitalWrite(VFBLANK, LOW);
+        ledcWrite(BLANK_CHANNEL, 0);
         if (!server_active)
         {
             init_server();
@@ -407,12 +406,12 @@ void set_text(int disp_mode, char *disp_text)
         break;
 
     case 4: // NTP syncing
-        digitalWrite(VFBLANK, LOW);
+        ledcWrite(BLANK_CHANNEL, 0);
         sprintf(disp_text, " %-8s", "Callisto");
         break;
 
     case 5: // Wifi error
-        digitalWrite(VFBLANK, LOW);
+        ledcWrite(BLANK_CHANNEL, 0);
         sprintf(disp_text, " %-8s", "net err");
 
         if (!ap_active)
@@ -424,7 +423,7 @@ void set_text(int disp_mode, char *disp_text)
         break;
 
     case 6: // AP active
-        digitalWrite(VFBLANK, LOW);
+        ledcWrite(BLANK_CHANNEL, 0);
         sprintf(disp_text, " %-8s", "connect");
 
         if (!ap_active)

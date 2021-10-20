@@ -50,9 +50,7 @@ void init_spi()
     constexpr int SPI_FREQ{500000};
 
     pinMode(VFLOAD, OUTPUT);
-    pinMode(VFBLANK, OUTPUT);
     digitalWrite(VFLOAD, LOW);
-    digitalWrite(VFBLANK, HIGH);
     SPI.begin();
     SPI.beginTransaction(SPISettings(SPI_FREQ, MSBFIRST, SPI_MODE0));
 }
