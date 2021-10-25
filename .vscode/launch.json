@@ -29,6 +29,16 @@
             "projectEnvName": "esp32dev",
             "toolchainBinDir": "C:/Users/Hiroto/.platformio/packages/toolchain-xtensa32@2.50200.97/bin",
             "internalConsoleOptions": "openOnSessionStart"
+        },
+        {
+            "type": "platformio-debug",
+            "request": "launch",
+            "name": "PIO Debug (without uploading)",
+            "executable": "C:/Users/Hiroto/Documents/Projects/Callisto/firmware/.pio/build/esp32dev/firmware.elf",
+            "projectEnvName": "esp32dev",
+            "toolchainBinDir": "C:/Users/Hiroto/.platformio/packages/toolchain-xtensa32@2.50200.97/bin",
+            "internalConsoleOptions": "openOnSessionStart",
+            "loadMode": "manual"
         }
     ]
 }

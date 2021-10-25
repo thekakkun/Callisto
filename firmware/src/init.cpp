@@ -1,6 +1,7 @@
 #include "config_server.h"
 #include <esp_pm.h>
 #include <esp_sleep.h>
+
 #include "init.h"
 
 void init_brightness()
@@ -20,6 +21,8 @@ void init_brightness()
 
     ledcSetup(BLANK_CHANNEL, PWM_FREQ, PWM_RESOLUTION);
     ledcAttachPin(VFBLANK, BLANK_CHANNEL);
+
+    ldr_reading.begin();
 }
 
 void touch_callback()

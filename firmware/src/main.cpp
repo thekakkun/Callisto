@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include <esp32-hal-touch.h>
-
+#include <movingAvg.h>
 
 #include "init.h"
 #include "config_server.h"
@@ -16,6 +16,7 @@ bool server_active{false};
 // PWM and photoresistor
 constexpr int LDR_PIN{36};
 constexpr int BOOST_CHANNEL{0};
+movingAvg ldr_reading(50);
 
 // Touch
 constexpr int TOUCH_THRESHOLD{400};
@@ -69,8 +70,8 @@ void loop()
   static char disp_text[10]{};
   int dots[9]{};
 
-  static int min_brightness{2500};
-  static int max_brightness{2501};
+  static int min_brightness{300};
+  static int max_brightness{301};
 
   // Get ambient light and adjust PWM
   brightness_utilities(&min_brightness, &max_brightness);

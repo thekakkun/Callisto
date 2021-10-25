@@ -3,8 +3,10 @@
 
 #include <Arduino.h>
 #include <SPI.h>
+#include <movingAvg.h>
 
 extern const int LDR_PIN;
+extern movingAvg ldr_reading;
 extern const int BOOST_CHANNEL;
 extern const int BLANK_CHANNEL;
 void adjust_brightness(int min_brightness, int max_brightness);

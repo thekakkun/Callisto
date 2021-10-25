@@ -4,10 +4,12 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <SPIFFS.h>
-#include <WiFi.h>
+#include <movingAvg.h>
 #include <esp_sntp.h>
+#include <WiFi.h>
 
 extern const int BOOST_CHANNEL;
+extern movingAvg ldr_reading;
 void init_brightness();
 
 extern const int TOUCH_THRESHOLD;

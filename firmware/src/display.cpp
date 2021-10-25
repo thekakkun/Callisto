@@ -14,20 +14,21 @@ void adjust_brightness(int min_brightness, int max_brightness)
     constexpr int PWM_LIM_HI{0}, PWM_LIM_LO{240}; // Absolute limits for PWM.
     const int PWM_LIM_RANGE{PWM_LIM_LO - PWM_LIM_HI};
     float pwm_hi, pwm_lo;
-    float ambient_brightness_p{};
-    int blank_pwm;
+    float brightness_p{};
+    int blank_duty;
 
     // PWM limit based on user-set brightness range.
     pwm_hi = PWM_LIM_HI + (PWM_LIM_RANGE * static_cast<float>(settings.lo_brightness - 1) / 9);
     pwm_lo = PWM_LIM_HI + (PWM_LIM_RANGE * static_cast<float>(settings.hi_brightness - 1) / 9);
 
     int brightness{analogRead(LDR_PIN)};
-    ambient_brightness_p =
-        static_cast<float>(brightness - min_brightness) / (max_brightness - min_brightness);
-    blank_pwm = static_cast<int>(pwm_hi + (1 - ambient_brightness_p) * (pwm_lo - pwm_hi));
+    int brightness_avg{ldr_reading.reading(brightness)};
+    brightness_p =
+        static_cast<float>(brightness_avg - min_brightness) / (max_brightness - min_brightness);
+    blank_duty = static_cast<int>(pwm_hi + (1 - brightness_p) * (pwm_lo - pwm_hi));
 
     ledcWrite(BOOST_CHANNEL, BOOST_DUTY);
-    ledcWrite(BLANK_CHANNEL, blank_pwm);
+    ledcWrite(BLANK_CHANNEL, blank_duty);
 }
 
 void set_touch_state(bool &touch_state, bool &previous_touch_state,
@@ -201,7 +202,6 @@ void set_text(Mode disp_mode, char *disp_text)
         int time_digital, night_end_digital, deep_sleep_sec;
 
     case current_time:
-        ledcWrite(BLANK_CHANNEL, 0);
         touch_pad_set_fsm_mode(TOUCH_FSM_MODE_DEFAULT);
         esp_sleep_enable_touchpad_wakeup();
 
@@ -297,8 +297,6 @@ void set_text(Mode disp_mode, char *disp_text)
         break;
 
     case current_date:
-        ledcWrite(BLANK_CHANNEL, 0);
-
         now = time(0);
         timeinfo = *localtime(&now);
 
@@ -388,7 +386,6 @@ void set_text(Mode disp_mode, char *disp_text)
         break;
 
     case ip_address:
-        ledcWrite(BLANK_CHANNEL, 0);
         if (!server_active)
         {
             init_server();
@@ -397,12 +394,10 @@ void set_text(Mode disp_mode, char *disp_text)
         break;
 
     case ntp_syncing:
-        ledcWrite(BLANK_CHANNEL, 0);
         sprintf(disp_text, " %-8s", "Callisto");
         break;
 
     case wifi_error:
-        ledcWrite(BLANK_CHANNEL, 0);
         sprintf(disp_text, " %-8s", "net err");
 
         if (!ap_active)
@@ -414,7 +409,6 @@ void set_text(Mode disp_mode, char *disp_text)
         break;
 
     case connect_ap:
-        ledcWrite(BLANK_CHANNEL, 0);
         sprintf(disp_text, " %-8s", "connect");
 
         if (!ap_active)
