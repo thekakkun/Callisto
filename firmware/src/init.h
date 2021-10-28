@@ -7,6 +7,8 @@
 #include <movingAvg.h>
 #include <esp_sntp.h>
 #include <WiFi.h>
+#include <esp_pm.h>
+#include <esp_sleep.h>
 
 extern const int BOOST_CHANNEL;
 extern movingAvg ldr_reading;

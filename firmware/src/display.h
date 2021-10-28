@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <movingAvg.h>
+#include <esp_sleep.h>
 
 extern const int LDR_PIN;
 extern movingAvg ldr_reading;
@@ -34,6 +35,7 @@ enum Mode
 };
 
 bool is_night();
+void go_to_sleep();
 Mode get_mode();
 void set_text(Mode disp_mode, char *disp_text);
 

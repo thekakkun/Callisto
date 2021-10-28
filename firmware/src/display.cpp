@@ -1,4 +1,3 @@
-
 #include "config_server.h"
 #include "display.h"
 
@@ -40,7 +39,7 @@ void set_touch_state(bool &touch_state, bool &previous_touch_state,
     uint16_t touch_value{};
     unsigned long now_ms{millis()};
 
-    touch_pad_read_filtered(TOUCH_PAD_NUM3, &touch_value);
+    touch_pad_read_filtered(TOUCH_PAD_GPIO15_CHANNEL, &touch_value);
 
     if (touch_value < TOUCH_THRESHOLD)
     {
@@ -80,7 +79,11 @@ bool is_night()
         settings.night_start_h * 100 + settings.night_start_m;
     night_end_digital = settings.night_end_h * 100 + settings.night_end_m;
 
-    if (night_start_digital < night_end_digital)
+    if (night_start_digital == night_end_digital)
+    {
+        return false;
+    }
+    else if (night_start_digital < night_end_digital)
     {
         if (night_start_digital <= current_time_digital && current_time_digital < night_end_digital)
         {
@@ -102,6 +105,37 @@ bool is_night()
             return false;
         }
     }
+}
+
+void go_to_sleep()
+{
+    time_t now;
+    struct tm timeinfo;
+    int time_digital, night_end_digital, deep_sleep_sec;
+
+    Serial.println("entering sleep");
+
+    now = time(0);
+    timeinfo = *localtime(&now);
+
+    time_digital = timeinfo.tm_hour * 100 + timeinfo.tm_min;
+    night_end_digital = settings.night_end_h * 100 + settings.night_end_m;
+
+    if (time_digital < night_end_digital)
+    {
+        deep_sleep_sec = (settings.night_end_h - timeinfo.tm_hour) * 60 * 60 +
+                         (settings.night_end_m - timeinfo.tm_min) * 60 +
+                         (0 - timeinfo.tm_sec);
+    }
+    else
+    {
+        deep_sleep_sec =
+            (settings.night_end_h - timeinfo.tm_hour + 24) * 60 * 60 +
+            (settings.night_end_m - timeinfo.tm_min) * 60 +
+            (0 - timeinfo.tm_sec);
+    }
+
+    esp_deep_sleep(deep_sleep_sec * 1e6);
 }
 
 Mode get_mode()
@@ -199,12 +233,8 @@ void set_text(Mode disp_mode, char *disp_text)
     {
         time_t now;
         struct tm timeinfo;
-        int time_digital, night_end_digital, deep_sleep_sec;
 
     case current_time:
-        touch_pad_set_fsm_mode(TOUCH_FSM_MODE_DEFAULT);
-        esp_sleep_enable_touchpad_wakeup();
-
         if (server_active)
         {
             server.end();
@@ -267,33 +297,7 @@ void set_text(Mode disp_mode, char *disp_text)
         break;
 
     case in_sleep:
-        ledcWrite(BLANK_CHANNEL, 255);
-
-        now = time(0);
-        timeinfo = *localtime(&now);
-
-        time_digital = timeinfo.tm_hour * 100 + timeinfo.tm_min;
-        night_end_digital = settings.night_end_h * 100 + settings.night_end_m;
-
-        if (time_digital < night_end_digital)
-        {
-            deep_sleep_sec = (settings.night_end_h - timeinfo.tm_hour) * 60 * 60 +
-                             (settings.night_end_m - timeinfo.tm_min) * 60 +
-                             (0 - timeinfo.tm_sec);
-        }
-        else
-        {
-            deep_sleep_sec =
-                (settings.night_end_h - timeinfo.tm_hour + 24) * 60 * 60 +
-                (settings.night_end_m - timeinfo.tm_min) * 60 +
-                (0 - timeinfo.tm_sec);
-        }
-
-        touch_pad_set_fsm_mode(TOUCH_FSM_MODE_TIMER);
-        esp_sleep_enable_touchpad_wakeup();
-        esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_ON);
-        esp_deep_sleep(deep_sleep_sec * 1e6);
-
+        go_to_sleep();
         break;
 
     case current_date:

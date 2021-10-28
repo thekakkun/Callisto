@@ -1,7 +1,4 @@
 #include "config_server.h"
-#include <esp_pm.h>
-#include <esp_sleep.h>
-
 #include "init.h"
 
 void init_brightness()
@@ -42,8 +39,11 @@ void init_touch()
     touch_pad_set_fsm_mode(TOUCH_FSM_MODE_TIMER);
     touch_pad_config(TOUCH_PAD_GPIO15_CHANNEL, TOUCH_THRESHOLD);
     touch_pad_filter_start(10);
+
     touchAttachInterrupt(TOUCH_PAD_GPIO15_CHANNEL, touch_callback,
                          TOUCH_THRESHOLD);
+    esp_sleep_enable_touchpad_wakeup();
+    esp_sleep_pd_config(ESP_PD_DOMAIN_RTC_PERIPH, ESP_PD_OPTION_AUTO);
 }
 
 void init_spi()
