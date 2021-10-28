@@ -70,8 +70,8 @@ void loop()
   static char disp_text[10]{};
   int dots[9]{};
 
-  static int min_brightness{300};
-  static int max_brightness{301};
+  static int min_brightness{4095};
+  static int max_brightness{0};
 
   // Get ambient light and adjust PWM
   brightness_utilities(&min_brightness, &max_brightness);
