@@ -297,6 +297,7 @@ void set_text(Mode disp_mode, char *disp_text)
         break;
 
     case in_sleep:
+        ledcWrite(BLANK_CHANNEL, 255);
         go_to_sleep();
         break;
 
