@@ -22,6 +22,7 @@ extern bool credentials_saved;
 extern bool server_active;
 extern bool time_synced;
 extern const int VFBLANK;
+extern unsigned long touch_wake_time;
 
 enum Mode
 {

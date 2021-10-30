@@ -199,10 +199,9 @@ Mode get_mode()
         }
         else if (is_night())
         {
-            if (now_ms - touch_start < SHOW_FOR + 5000)
+            if (now_ms - touch_wake_time < SHOW_FOR)
             {
-                // touched at night -> show time for longer
-                // (to accomodate for waking from deep sleep)
+                // touched at night -> show time
                 return current_time;
             }
             else

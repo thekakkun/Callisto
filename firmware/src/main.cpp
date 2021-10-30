@@ -20,6 +20,7 @@ movingAvg ldr_reading(50);
 
 // Touch
 constexpr int TOUCH_THRESHOLD{400};
+unsigned long touch_wake_time{};
 
 // SPI interface
 constexpr int VFLOAD{5};
@@ -61,6 +62,13 @@ void setup()
   {
     init_power_save();
     init_sntp();
+
+    esp_sleep_wakeup_cause_t wakeup_reason;
+    wakeup_reason = esp_sleep_get_wakeup_cause();
+
+    if (wakeup_reason == ESP_SLEEP_WAKEUP_TOUCHPAD) {
+      touch_wake_time = millis();
+    }
   }
 }
 
