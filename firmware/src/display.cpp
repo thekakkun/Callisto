@@ -534,7 +534,7 @@ void send_spi_data(int spi_data)
     digitalWrite(VFLOAD, HIGH);
 }
 
-void brightness_utilities(int *min_brightness, int *max_brightness)
+void utilities(int *min_brightness, int *max_brightness)
 {
     /* Various utilities regarding brightness
    * Set min and max brightness, based on what was seen
@@ -554,16 +554,29 @@ void brightness_utilities(int *min_brightness, int *max_brightness)
     }
 
     // every 2 days
-    constexpr unsigned int UTILITY_FREQUENCY{1000 * 60 * 60 * 24 * 2};
+    unsigned long now_ms = millis();
+    static unsigned long last_brightness_damper{0};
+    constexpr unsigned int BRIGHTNESS_DAMPER_FREQUENCY{1000 * 60 * 60 * 24 * 2};
     constexpr float DAMP_P{.02};
-    static unsigned long now_ms = millis();
-    unsigned long last_run = 0;
 
-    if (now_ms - last_run >= UTILITY_FREQUENCY)
+    if (now_ms - last_brightness_damper >= BRIGHTNESS_DAMPER_FREQUENCY)
     {
-        last_run = now_ms;
         int brightness_mean = (*max_brightness + *min_brightness) / 2;
         *max_brightness = max(int(*max_brightness * (1 - DAMP_P)), brightness_mean);
         *min_brightness = min(int(*max_brightness * (1 + DAMP_P)), brightness_mean);
+
+        last_brightness_damper = now_ms;
+    }
+
+    static unsigned long last_wifi_check{0};
+    constexpr unsigned int WIFI_CHECK_FREQUENCY{1000 * 60 * 30};
+    if (
+        (WiFi.status() != WL_CONNECTED) &&
+        (now_ms - last_wifi_check >= WIFI_CHECK_FREQUENCY) &&
+        (wifi_connected))
+    {
+        Serial.println("WiFi disconnected. Attempting connect.");
+        WiFi.reconnect();
+        last_wifi_check = now_ms;
     }
 }

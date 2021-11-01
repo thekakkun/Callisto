@@ -238,7 +238,4 @@ void init_sntp()
         sntp_setservername(i, (char *)ntp_server[i]);
     }
     sntp_init();
-
-    setenv("TZ", settings.time_zone.c_str(), 1);
-    tzset();
 }

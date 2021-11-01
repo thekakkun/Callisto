@@ -7,9 +7,10 @@
 #include "display.h"
 
 // Flags
-bool credentials_saved{false};
-bool wifi_connected{false};
-bool time_synced{false};
+RTC_DATA_ATTR int boot_count{0};
+RTC_DATA_ATTR bool credentials_saved{false};
+RTC_DATA_ATTR bool wifi_connected{false};
+RTC_DATA_ATTR bool time_synced{false};
 bool ap_active{false};
 bool server_active{false};
 
@@ -53,23 +54,34 @@ void setup()
     credentials_saved = true;
   }
 
-  if (credentials_saved)
+  esp_sleep_wakeup_cause_t wakeup_reason;
+  wakeup_reason = esp_sleep_get_wakeup_cause();
+
+  if (wakeup_reason == ESP_SLEEP_WAKEUP_TOUCHPAD)
   {
-    init_wifi();
+    touch_wake_time = millis();
   }
-
-  if (wifi_connected)
+  else
   {
-    init_power_save();
-    init_sntp();
+    if (credentials_saved)
+    {
+      init_wifi();
+    }
 
-    esp_sleep_wakeup_cause_t wakeup_reason;
-    wakeup_reason = esp_sleep_get_wakeup_cause();
-
-    if (wakeup_reason == ESP_SLEEP_WAKEUP_TOUCHPAD) {
-      touch_wake_time = millis();
+    if (wifi_connected)
+    {
+      init_power_save();
+      init_sntp();
+    }
+    else if (boot_count)
+    {
+      init_power_save();
+      time_synced = true;
+      wifi_connected = true;
     }
   }
+
+  ++boot_count;
 }
 
 void loop()
@@ -82,7 +94,7 @@ void loop()
   static int max_brightness{0};
 
   // Get ambient light and adjust PWM
-  brightness_utilities(&min_brightness, &max_brightness);
+  utilities(&min_brightness, &max_brightness);
   adjust_brightness(min_brightness, max_brightness);
 
   // Set display text and dots based on mode
