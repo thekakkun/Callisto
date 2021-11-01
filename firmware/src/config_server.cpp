@@ -26,9 +26,6 @@ void CallistoSettings::init()
     night_end_h = preferences.getInt("night_end_h", 6);
     night_end_m = preferences.getInt("night_end_m", 0);
 
-    night_end_h = 16;
-    night_end_m = 55;
-
     time_zone = preferences.getString("time_zone", "EST5EDT,M3.2.0,M11.1.0");
     setenv("TZ", time_zone.c_str(), 1);
     tzset();
