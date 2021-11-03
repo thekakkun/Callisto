@@ -63,46 +63,53 @@ void set_touch_state(bool &touch_state, bool &previous_touch_state,
     }
 }
 
-bool is_night()
+bool is_night(bool touch_state)
 {
     /* Figure out if night mode should be active
    */
 
-    time_t now{time(0)};
-    struct tm timeinfo = *localtime(&now);
-
-    int current_time_digital{};
-    static int night_start_digital{}, night_end_digital{};
-
-    current_time_digital = timeinfo.tm_hour * 100 + timeinfo.tm_min;
-    night_start_digital =
-        settings.night_start_h * 100 + settings.night_start_m;
-    night_end_digital = settings.night_end_h * 100 + settings.night_end_m;
-
-    if (night_start_digital == night_end_digital)
+    if (touch_state)
     {
         return false;
     }
-    else if (night_start_digital < night_end_digital)
-    {
-        if (night_start_digital <= current_time_digital && current_time_digital < night_end_digital)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
-    }
     else
     {
-        if (night_start_digital <= current_time_digital || current_time_digital < night_end_digital)
+        time_t now{time(0)};
+        struct tm timeinfo = *localtime(&now);
+
+        int current_time_digital{};
+        static int night_start_digital{}, night_end_digital{};
+
+        current_time_digital = timeinfo.tm_hour * 100 + timeinfo.tm_min;
+        night_start_digital =
+            settings.night_start_h * 100 + settings.night_start_m;
+        night_end_digital = settings.night_end_h * 100 + settings.night_end_m;
+
+        if (night_start_digital == night_end_digital)
         {
-            return true;
+            return false;
+        }
+        else if (night_start_digital < night_end_digital)
+        {
+            if (night_start_digital <= current_time_digital && current_time_digital < night_end_digital)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
         else
         {
-            return false;
+            if (night_start_digital <= current_time_digital || current_time_digital < night_end_digital)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
         }
     }
 }
@@ -197,9 +204,9 @@ Mode get_mode()
             }
             return ntp_syncing; // time syncing -> show boot
         }
-        else if (is_night())
+        else if (is_night(touch_state))
         {
-            if (now_ms - touch_wake_time < SHOW_FOR)
+            if (now_ms < SHOW_FOR + touch_wake_time)
             {
                 // touched at night -> show time
                 return current_time;
@@ -211,7 +218,7 @@ Mode get_mode()
         }
         else
         {
-            if (now_ms - touch_start < SHOW_FOR)
+            if (now_ms < SHOW_FOR + touch_start)
             {
                 return current_date; // touched during day -> show date
             }
@@ -555,7 +562,7 @@ void utilities(int *min_brightness, int *max_brightness)
 
     // every 2 days
     unsigned long now_ms = millis();
-    static unsigned long last_brightness_damper{0};
+
     constexpr unsigned int BRIGHTNESS_DAMPER_FREQUENCY{1000 * 60 * 60 * 24 * 2};
     constexpr float DAMP_P{.02};
 
@@ -568,7 +575,6 @@ void utilities(int *min_brightness, int *max_brightness)
         last_brightness_damper = now_ms;
     }
 
-    static unsigned long last_wifi_check{0};
     constexpr unsigned int WIFI_CHECK_FREQUENCY{1000 * 60 * 30};
     if (
         (WiFi.status() != WL_CONNECTED) &&

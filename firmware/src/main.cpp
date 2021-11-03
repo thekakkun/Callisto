@@ -18,6 +18,11 @@ bool server_active{false};
 constexpr int LDR_PIN{36};
 constexpr int BOOST_CHANNEL{0};
 movingAvg ldr_reading(50);
+RTC_DATA_ATTR int min_brightness{4095};
+RTC_DATA_ATTR int max_brightness{0};
+
+RTC_DATA_ATTR unsigned long last_brightness_damper{0};
+RTC_DATA_ATTR unsigned long last_wifi_check{0};
 
 // Touch
 constexpr int TOUCH_THRESHOLD{400};
@@ -89,9 +94,6 @@ void loop()
   static int current_digit{0};
   static char disp_text[10]{};
   int dots[9]{};
-
-  static int min_brightness{4095};
-  static int max_brightness{0};
 
   // Get ambient light and adjust PWM
   utilities(&min_brightness, &max_brightness);

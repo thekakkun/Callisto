@@ -35,7 +35,7 @@ enum Mode
     connect_ap
 };
 
-bool is_night();
+bool is_night(bool touch_state);
 void go_to_sleep();
 Mode get_mode();
 void set_text(Mode disp_mode, char *disp_text);
@@ -49,5 +49,8 @@ extern int digit_table[9];
 extern const int VFLOAD;
 int get_spi_data(int current_digit, char *disp_text, int *dots);
 void send_spi_data(int spi_data);
+
+extern unsigned long last_brightness_damper;
+extern unsigned long last_wifi_check;
 
 #endif
