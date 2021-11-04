@@ -159,18 +159,6 @@ String processor(const String &var)
     return String();
 }
 
-void on_cancel(AsyncWebServerRequest *request)
-{
-    /* If cancel button on settings page is clicked
-   */
-
-    request->send(
-        200, "text/plain",
-        "Preferences closed without saving.\n\nYou may now close this page.");
-
-    delay(100);
-}
-
 void on_get(AsyncWebServerRequest *request)
 {
     /* If submit button on settings page is clicked, save them using the
@@ -178,8 +166,9 @@ void on_get(AsyncWebServerRequest *request)
    */
 
     request->send(200, "text/plain",
-                  "Preferences saved.\nCallisto will now reboot.\n\nYou may "
-                  "close this page.");
+                  "Preferences saved.\n"
+                  "Callisto will now reboot.\n\n"
+                  "You may close this page.");
     delay(100);
 
     unsigned int params{request->params()};
@@ -214,19 +203,35 @@ void on_get(AsyncWebServerRequest *request)
     }
 
     server.end();
-
     ESP.restart();
 }
 
-void on_factory_reset(AsyncWebServerRequest *request)
+void on_cancel(AsyncWebServerRequest *request)
+{
+    /* If cancel button on settings page is clicked
+   */
+
+    request->send(
+        200, "text/plain",
+        "Preferences closed without saving.\n\n"
+        "You may now close this page.");
+
+    delay(100);
+    server.end();
+    ESP.restart();
+}
+
+void on_reset(AsyncWebServerRequest *request)
 {
     /* If reset button on settings page is clicked, delete all preferences and
    * reboot.
    */
-    request->send(200, "text/plain",
-                  "All preferences reset to factory defaults.\nCallisto will now "
-                  "reboot.\n\nYou may "
-                  "close this page.");
+
+    request->send(
+        200, "text/plain",
+        "All preferences reset to factory defaults.\n"
+        "Callisto will now reboot.\n\n"
+        "You may close this page.");
     delay(100);
 
     settings.preferences.clear();
@@ -277,8 +282,8 @@ void init_server()
     // TODO: This is a lambda function. Try to understand it and make everything else better.
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/index.html", String(), false, processor); });
+    server.on("/reset", HTTP_GET, on_reset);
     server.on("/get", HTTP_POST, on_get);
-    server.on("/factory_reset", HTTP_GET, on_factory_reset);
     server.on("/cancel", HTTP_GET, on_cancel);
 
     server.begin();

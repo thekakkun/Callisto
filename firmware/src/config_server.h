@@ -47,7 +47,7 @@ void on_get(AsyncWebServerRequest *request);
 /* If reset button on settings page is clicked, delete all preferences and
 * reboot.
 */
-void on_factory_reset(AsyncWebServerRequest *request);
+void on_reset(AsyncWebServerRequest *request);
 
 /* Initialize the access point (AP), with a captive portal that will
 * automatically be shown once connected.
