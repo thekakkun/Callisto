@@ -63,7 +63,7 @@ void set_touch_state(bool &touch_state, bool &previous_touch_state,
     }
 }
 
-bool is_night(bool touch_state)
+bool is_night(bool touch_state = false)
 {
     /* Figure out if night mode should be active
    */
@@ -218,7 +218,7 @@ Mode get_mode()
         }
         else
         {
-            if (now_ms < SHOW_FOR + touch_start)
+            if ((now_ms < SHOW_FOR + touch_start) && !is_night())
             {
                 return current_date; // touched during day -> show date
             }
@@ -304,6 +304,7 @@ void set_text(Mode disp_mode, char *disp_text)
 
     case in_sleep:
         ledcWrite(BLANK_CHANNEL, 255);
+        sprintf(disp_text, " %-8s", "        ");
         go_to_sleep();
         break;
 
@@ -560,19 +561,23 @@ void utilities(int *min_brightness, int *max_brightness)
         *min_brightness = brightness;
     }
 
-    // every 2 days
     unsigned long now_ms = millis();
+    static unsigned long last_run{0};
 
-    constexpr unsigned int BRIGHTNESS_DAMPER_FREQUENCY{1000 * 60 * 60 * 24 * 2};
     constexpr float DAMP_P{.02};
 
-    if (now_ms - last_brightness_damper >= BRIGHTNESS_DAMPER_FREQUENCY)
+    if (!last_run && !is_night())
     {
         int brightness_mean = (*max_brightness + *min_brightness) / 2;
-        *max_brightness = max(int(*max_brightness * (1 - DAMP_P)), brightness_mean);
-        *min_brightness = min(int(*max_brightness * (1 + DAMP_P)), brightness_mean);
 
-        last_brightness_damper = now_ms;
+        *max_brightness = max(
+            int(*max_brightness * (1 - DAMP_P)),
+            brightness_mean);
+        *min_brightness = min(
+            int(*max_brightness * (1 + DAMP_P)),
+            brightness_mean);
+
+        last_run = now_ms;
     }
 
     constexpr unsigned int WIFI_CHECK_FREQUENCY{1000 * 60 * 30};
