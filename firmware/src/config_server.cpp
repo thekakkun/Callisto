@@ -279,7 +279,11 @@ void init_server()
     /* Initialize the settings webpage server
    */
 
-    // TODO: This is a lambda function. Try to understand it and make everything else better.
+    if (WiFi.status() != WL_CONNECTED)
+    {
+        WiFi.begin(settings.ssid.c_str(), settings.password.c_str());
+    }
+
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
               { request->send(SPIFFS, "/index.html", String(), false, processor); });
     server.on("/reset", HTTP_GET, on_reset);
