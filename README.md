@@ -2,7 +2,7 @@
 
 Callisto is a digital clock that uses a Russian IV-18 vacuum fluorescent tube for the display. The clock uses an ESP32 to automatically sync time.
 
-The name *Callisto* was chosen so that the name could be displed on an 8-digit seven-segment display.
+The name *Callisto* was chosen so that the name could be displayed on an 8-digit seven-segment display.
 
 ![DSC01592 (2)](https://user-images.githubusercontent.com/20251225/147790506-1a9c013b-f025-4b8d-8492-5346c15807aa.JPG)
 
