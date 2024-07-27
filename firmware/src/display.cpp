@@ -1,5 +1,7 @@
 #include "config_server.h"
 #include "display.h"
+#include <driver/touch_sensor.h>
+#include <soc/touch_sensor_channel.h>
 
 void adjust_brightness(int min_brightness, int max_brightness)
 {

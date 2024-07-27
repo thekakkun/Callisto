@@ -35,9 +35,9 @@ void init_font_table();
 
 void init_power_save();
 
-_VOID _EXFUN(tzset, (_VOID));
-int _EXFUN(setenv,
-           (const char *__string, const char *__value, int __overwrite));
+// _VOID _EXFUN(tzset, (_VOID));
+// int _EXFUN(setenv,
+//            (const char *__string, const char *__value, int __overwrite));
 void init_sntp();
 
 #endif
