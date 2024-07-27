@@ -1,5 +1,8 @@
 #include "config_server.h"
 #include "init.h"
+#include <driver/touch_sensor_common.h>
+#include <driver/touch_sensor.h>
+#include <soc/touch_sensor_channel.h>
 
 void init_brightness()
 {
